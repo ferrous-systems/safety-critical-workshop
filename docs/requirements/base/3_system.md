@@ -1,6 +1,6 @@
-# *RAD* Requirements
+# *RAD* System Requirements
 
-This section contains all requirements for the *RAD* device that are derived from the [goals](./1_goals.md) and [risk](2_risk-analysis.md) sections. 
+This section contains all system requirements for the *RAD* device that are derived from the [goals](./1_goals.md) and [risk](2_risk-analysis.md) sections. 
 
 ## `usage`: Using *RAD*
 

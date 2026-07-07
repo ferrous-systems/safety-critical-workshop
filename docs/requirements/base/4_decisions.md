@@ -1,6 +1,6 @@
 # `rad`: *RAD* Implementation Decisions
 
-This requirement groups the implementation decisions derived from the [*RAD* requirements](./3_requirements.md).
+This requirement groups the implementation decisions derived from the [*RAD* system requirements](./3_system.md).
 
 ## `rad.mode`: Operation mode of *RAD*
 

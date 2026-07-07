@@ -1,6 +1,6 @@
 # *RAD* Decision Improvements Phase 2
 
-This section builds uppon the phase two requirements to apply everything learned during the workshop.
+This section builds uppon the phase two system requirements to apply everything learned during the workshop.
 
 ## `rad.sw.limit-radiation`:
 
