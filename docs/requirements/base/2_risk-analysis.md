@@ -9,6 +9,8 @@ properties: [
 This section covers the risk analysis of *RAD*.
 Identifying potential risks and specifying related risk control measures is common practice for safety-critical products.
 
+**Note:** To keep the demo simple, we ignore potential hardware faults and connection issues.
+
 ## `risk.wrong-usage`: Wrong usage
 
 If the *RAD* is wrongfully configured or used outside an safe operation environment,
