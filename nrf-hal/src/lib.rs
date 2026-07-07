@@ -1,0 +1,432 @@
+//! Minimal Board Support Package (BSP) for the nRF52840 Development Kit
+//! See <https://www.nordicsemi.com/Products/Development-hardware/nrf52840-dk>
+//!
+//! Based on `nrf52-code` from Ferrous Systems [rust-exercises](https://github.com/ferrous-systems/rust-exercises).
+
+#![deny(missing_docs)]
+#![deny(warnings)]
+#![no_std]
+
+use core::{
+    hint::spin_loop,
+    sync::atomic::{self, AtomicBool, AtomicU32, Ordering},
+    time::Duration,
+};
+
+use cortex_m_semihosting::debug;
+use embedded_hal::delay::DelayNs;
+pub use hal;
+pub use hal::pac::interrupt;
+use hal::{
+    Peri,
+    gpio::{Input, Level, Output, OutputDrive, Port},
+};
+
+use defmt_rtt as _; // global logger
+
+/// Components on the board
+pub struct Board {
+    /// LEDs
+    pub leds: Leds,
+    /// Buttons.
+    pub buttons: Buttons,
+    /// Timer
+    pub timer: Timer,
+}
+
+/// All LEDs on the board
+pub struct Leds {
+    /// LED1: pin P0.13, green LED
+    pub _1: Led,
+    /// LED2: pin P0.14, green LED
+    pub _2: Led,
+    /// LED3: pin P0.15, green LED
+    pub _3: Led,
+    /// LED4: pin P0.16, green LED
+    pub _4: Led,
+}
+
+/// A single LED
+pub struct Led {
+    port: Port,
+    pin: u8,
+    inner: Output<'static>,
+}
+
+impl Led {
+    /// Turns on the LED
+    pub fn on(&mut self) {
+        defmt::trace!(
+            "setting P{}.{} low (LED on)",
+            if self.port == Port::Port1 { '1' } else { '0' },
+            self.pin
+        );
+
+        self.inner.set_low()
+    }
+
+    /// Turns off the LED
+    pub fn off(&mut self) {
+        defmt::trace!(
+            "setting P{}.{} high (LED off)",
+            if self.port == Port::Port1 { '1' } else { '0' },
+            self.pin
+        );
+
+        self.inner.set_high()
+    }
+
+    /// Returns `true` if the LED is in the OFF state
+    pub fn is_off(&self) -> bool {
+        self.inner.is_set_high()
+    }
+
+    /// Returns `true` if the LED is in the ON state
+    pub fn is_on(&self) -> bool {
+        !self.is_off()
+    }
+
+    /// Toggles the state (on/off) of the LED
+    pub fn toggle(&mut self) {
+        if self.is_off() {
+            self.on();
+        } else {
+            self.off()
+        }
+    }
+}
+
+/// All Buttons on the board
+pub struct Buttons {
+    /// Button1: pin P0.11
+    pub _1: Button,
+    /// Button2: pin P0.12
+    pub _2: Button,
+    /// Button3: pin P0.24
+    pub _3: Button,
+    /// Button4: pin P0.25
+    pub _4: Button,
+}
+
+/// A single Button
+pub struct Button {
+    inner: Input<'static>,
+}
+
+impl Button {
+    /// Is the button pressed
+    pub fn is_pressed(&self) -> bool {
+        self.inner.is_low()
+    }
+}
+
+/// A timer for creating blocking delays
+pub struct Timer(hal::timer::Timer<'static>);
+
+impl DelayNs for Timer {
+    fn delay_ns(&mut self, ns: u32) {
+        if ns == 0 {
+            return;
+        }
+        self.0.stop();
+        self.0.clear();
+        // Write cycle count in microseconds for 1 MHz timer.
+        self.0.cc(0).write(ns / 1_000);
+        self.0.start();
+        while !self.reset_if_finished() {
+            spin_loop();
+        }
+    }
+}
+
+impl Timer {
+    /// Create a new timer instance which can be used for blocking delays.
+    pub fn new<T: hal::timer::Instance>(peri: Peri<'static, T>) -> Self {
+        let timer = hal::timer::Timer::new(peri);
+        timer.set_frequency(hal::timer::Frequency::F1MHz);
+        timer.cc(0).short_compare_clear();
+        timer.cc(0).short_compare_stop();
+        Self(timer)
+    }
+
+    /// Start the timer with the given microsecond duration.
+    pub fn start(&mut self, microseconds: u32) {
+        self.0.stop();
+        self.0.clear();
+        self.0.cc(0).write(microseconds);
+        self.0.start();
+    }
+
+    /// If the timer has finished, resets it and returns true.
+    ///
+    /// Returns false if the timer is still running.
+    pub fn reset_if_finished(&mut self) -> bool {
+        if !self.0.cc(0).event_compare().is_triggered() {
+            // EVENTS_COMPARE has not been triggered yet
+            return false;
+        }
+
+        self.0.cc(0).clear_events();
+
+        true
+    }
+
+    /// Wait for the specified duration.
+    pub fn wait(&mut self, duration: Duration) {
+        defmt::trace!("blocking for {:?} ...", duration);
+
+        // 1 cycle = 1 microsecond
+        let subsec_micros = duration.subsec_micros();
+        if subsec_micros != 0 {
+            self.delay_us(subsec_micros);
+        }
+
+        let mut millis = duration.as_secs() * 1000;
+        if millis == 0 {
+            return;
+        }
+
+        while millis > u32::MAX as u64 {
+            self.delay_ms(u32::MAX);
+            millis -= u32::MAX as u64;
+        }
+        self.delay_ms(millis as u32);
+
+        defmt::trace!("... DONE");
+    }
+}
+
+/// The ways that initialisation can fail
+#[derive(Debug, Copy, Clone, defmt::Format)]
+pub enum Error {
+    /// You tried to initialise the board twice
+    DoubleInit = 1,
+}
+
+// Atomic flag to detect double initialization of the HAL.
+static HAL_INIT: AtomicBool = AtomicBool::new(false);
+
+/// Initializes the board
+pub fn init() -> Result<Board, Error> {
+    if HAL_INIT.swap(true, Ordering::Relaxed) {
+        return Err(Error::DoubleInit);
+    }
+
+    let mut config = hal::config::Config::default();
+    config.hfclk_source = hal::config::HfclkSource::ExternalXtal;
+    config.lfclk_source = hal::config::LfclkSource::ExternalXtal;
+    let periph = hal::init(config);
+
+    // probe-rs puts us in blocking mode, so wait for blocking mode as a proxy
+    // for waiting for probe-rs to connect.
+    //
+    // do this *after* clock set-up to avoid start-up issues
+    while !defmt_rtt::in_blocking_mode() {
+        core::hint::spin_loop();
+    }
+
+    // NOTE: this branch runs at most once
+
+    let mut rtc = hal::rtc::Rtc::new(periph.RTC0, 0).unwrap();
+    // NOTE on unmasking the NVIC interrupt: Because this crate defines the `#[interrupt] fn RTC0`
+    // interrupt handler, RTIC cannot manage that interrupt (trying to do so results in a linker
+    // error). Thus it is the task of this crate to mask/unmask the interrupt in a safe manner.
+    //
+    // Because the RTC0 interrupt handler does *not* access static variables through a critical
+    // section (that disables interrupts) this `unmask` operation cannot break critical sections
+    // and thus won't lead to undefined behavior (e.g. torn reads/writes)
+    //
+    // the preceding `enable_conuter` method consumes the `rtc` value. This is a semantic move
+    // of the RTC0 peripheral from this function (which can only be called at most once) to the
+    // interrupt handler (where the peripheral is accessed without any synchronization
+    // mechanism)
+    rtc.enable_interrupt(hal::rtc::Interrupt::Overflow, true);
+    rtc.enable();
+
+    defmt::debug!("RTC started");
+
+    let led1pin = Led {
+        port: Port::Port0,
+        pin: 13,
+        inner: Output::new(periph.P0_13, Level::High, OutputDrive::Standard),
+    };
+    let led2pin = Led {
+        port: Port::Port0,
+        pin: 14,
+        inner: Output::new(periph.P0_14, Level::High, OutputDrive::Standard),
+    };
+    let led3pin = Led {
+        port: Port::Port0,
+        pin: 15,
+        inner: Output::new(periph.P0_15, Level::High, OutputDrive::Standard),
+    };
+    let led4pin = Led {
+        port: Port::Port0,
+        pin: 16,
+        inner: Output::new(periph.P0_16, Level::High, OutputDrive::Standard),
+    };
+
+    defmt::debug!("I/O pins have been configured for digital output");
+
+    // NOTE pin goes low when button is pressed
+    let button1pin = Button {
+        inner: Input::new(periph.P0_11, hal::gpio::Pull::Up),
+    };
+    let button2pin = Button {
+        inner: Input::new(periph.P0_12, hal::gpio::Pull::Up),
+    };
+    let button3pin = Button {
+        inner: Input::new(periph.P0_24, hal::gpio::Pull::Up),
+    };
+    let button4pin = Button {
+        inner: Input::new(periph.P0_25, hal::gpio::Pull::Up),
+    };
+
+    let timer = Timer::new(periph.TIMER0);
+
+    Ok(Board {
+        leds: Leds {
+            _1: led1pin,
+            _2: led2pin,
+            _3: led3pin,
+            _4: led4pin,
+        },
+        buttons: Buttons {
+            _1: button1pin,
+            _2: button2pin,
+            _3: button3pin,
+            _4: button4pin,
+        },
+        timer,
+    })
+}
+
+// Counter of OVERFLOW events -- an OVERFLOW occurs every (1<<24) ticks
+static OVERFLOWS: AtomicU32 = AtomicU32::new(0);
+
+// NOTE this will run at the highest priority, higher priority than RTIC tasks
+#[interrupt]
+fn RTC0() {
+    OVERFLOWS.fetch_add(1, Ordering::Release);
+    let rtc = hal::pac::RTC0;
+    // clear the EVENT register
+    rtc.events_ovrflw().write_value(0);
+}
+
+/// Exits the application successfully when the program is executed through the
+/// `probe-rs` Cargo runner
+pub fn exit() -> ! {
+    unsafe {
+        // turn off the USB D+ pull-up before pausing the device with a breakpoint
+        // this disconnects the nRF device from the USB host so the USB host won't attempt further
+        // USB communication (and see an unresponsive device).
+        const USBD_USBPULLUP: *mut u32 = 0x4002_7504 as *mut u32;
+        USBD_USBPULLUP.write_volatile(0)
+    }
+    defmt::println!("`dk::exit()` called; exiting ...");
+    // force any pending memory operation to complete before the instruction that follows
+    atomic::compiler_fence(Ordering::SeqCst);
+    loop {
+        debug::exit(debug::ExitStatus::Ok(()))
+    }
+}
+
+/// Exits the application with a failure when the program is executed through
+/// the `probe-rs` Cargo runner
+pub fn fail() -> ! {
+    unsafe {
+        // turn off the USB D+ pull-up before pausing the device with a breakpoint
+        // this disconnects the nRF device from the USB host so the USB host won't attempt further
+        // USB communication (and see an unresponsive device).
+        const USBD_USBPULLUP: *mut u32 = 0x4002_7504 as *mut u32;
+        USBD_USBPULLUP.write_volatile(0)
+    }
+    defmt::println!("`dk::fail()` called; exiting ...");
+    // force any pending memory operation to complete before the instruction that follows
+    atomic::compiler_fence(Ordering::SeqCst);
+    loop {
+        debug::exit(debug::ExitStatus::Err(()))
+    }
+}
+
+/// Returns the time elapsed since the call to the `dk::init` function
+///
+/// The time is in 32,768 Hz units (i.e. 32768 = 1 second)
+///
+/// Calling this function before calling `dk::init` will return a value of `0` nanoseconds.
+pub fn uptime_ticks() -> u64 {
+    // here we are going to perform a 64-bit read of the number of ticks elapsed
+    //
+    // a 64-bit load operation cannot performed in a single instruction so the operation can be
+    // preempted by the RTC0 interrupt handler (which increases the OVERFLOWS counter)
+    //
+    // the loop below will load both the lower and upper parts of the 64-bit value while preventing
+    // the issue of mixing a low value with an "old" high value -- note that, due to interrupts, an
+    // arbitrary amount of time may elapse between the `hi1` load and the `low` load
+
+    // # Safety
+    // Concurrent access to this field within the RTC is acceptable.
+    let rtc_counter = hal::pac::RTC0.counter();
+
+    loop {
+        // NOTE volatile is used to order these load operations among themselves
+        let hi1 = OVERFLOWS.load(Ordering::Acquire);
+        let low = rtc_counter.read().counter();
+        let hi2 = OVERFLOWS.load(Ordering::Relaxed);
+
+        if hi1 == hi2 {
+            break u64::from(low) | (u64::from(hi1) << 24);
+        }
+    }
+}
+
+/// Returns the time elapsed since the call to the `dk::init` function
+///
+/// The clock that is read to compute this value has a resolution of 30 microseconds.
+///
+/// Calling this function before calling `dk::init` will return a value of `0` nanoseconds.
+pub fn uptime() -> Duration {
+    // We have a time in 32,768 Hz units.
+    let mut ticks = uptime_ticks();
+
+    // turn it into 32_768_000_000 units
+    ticks = ticks.wrapping_mul(1_000_000);
+    // turn it into microsecond units
+    ticks >>= 15;
+    // turn it into nanosecond units
+    ticks = ticks.wrapping_mul(1_000);
+
+    // NB: 64-bit nanoseconds handles around 584 years.
+
+    let secs = ticks / 1_000_000_000;
+    let nanos = ticks % 1_000_000_000;
+
+    Duration::new(secs, nanos as u32)
+}
+
+/// Returns the time elapsed since the call to the `dk::init` function, in microseconds.
+///
+/// The clock that is read to compute this value has a resolution of 30 microseconds.
+///
+/// Calling this function before calling `dk::init` will return a value of `0` nanoseconds.
+pub fn uptime_us() -> u64 {
+    // We have a time in 32,768 Hz units.
+    let mut ticks = uptime_ticks();
+
+    // turn it into 32_768_000_000 units
+    ticks = ticks.wrapping_mul(1_000_000);
+    // turn it into microsecond units
+    ticks >>= 15;
+
+    ticks
+}
+
+/// Returns the least-significant bits of the device identifier
+pub fn deviceid0() -> u32 {
+    hal::pac::FICR.deviceid(0).read()
+}
+
+/// Returns the most-significant bits of the device identifier
+pub fn deviceid1() -> u32 {
+    hal::pac::FICR.deviceid(1).read()
+}
