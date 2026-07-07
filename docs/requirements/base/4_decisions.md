@@ -1,3 +1,9 @@
+---
+properties: [
+    { kind: "decision" },
+]
+---
+
 # `rad`: *RAD* Implementation Decisions
 
 This requirement groups the implementation decisions derived from the [*RAD* system requirements](./3_system.md).

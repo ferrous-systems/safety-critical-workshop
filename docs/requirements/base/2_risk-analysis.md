@@ -1,3 +1,9 @@
+---
+properties: [
+    { kind: "risk" },
+]
+---
+
 # `risk`: Risk Analysis of *RAD*
 
 This section covers the risk analysis of *RAD*.

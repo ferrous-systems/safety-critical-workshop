@@ -1,3 +1,9 @@
+---
+properties: [
+    { kind: "decision" },
+]
+---
+
 # *RAD* Decision Improvements Phase 1
 
 This section contains improvements for the *RAD* product during the first phase of the workshop.

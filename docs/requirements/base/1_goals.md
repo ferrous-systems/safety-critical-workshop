@@ -1,3 +1,9 @@
+---
+properties: [
+    { kind: "goal" },
+]
+---
+
 # `goal`: Goals for the *RAD* Product
 
 This section lists the high level goals for the *RAD* product, a device for radiation therapy.
