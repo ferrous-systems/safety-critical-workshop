@@ -1,7 +1,7 @@
 ---
-properties: [
-    { kind: "system" },
-]
+properties: {
+    kind: "system",
+}
 ---
 
 # *RAD* System Requirements

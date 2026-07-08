@@ -1,7 +1,7 @@
 ---
-properties: [
-    { kind: "decision" },
-]
+properties: {
+    kind: "decision",
+}
 ---
 
 # *RAD* Decision Improvements Phase 2

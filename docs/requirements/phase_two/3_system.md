@@ -1,7 +1,7 @@
 ---
-properties: [
-    { kind: "system" },
-]
+properties: {
+    kind: "system",
+}
 ---
 
 # *RAD* System Requirement Improvements Phase 2

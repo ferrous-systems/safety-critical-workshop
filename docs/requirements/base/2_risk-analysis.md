@@ -1,7 +1,7 @@
 ---
-properties: [
-    { kind: "risk" },
-]
+properties: {
+    kind: "risk",
+}
 ---
 
 # `risk`: Risk Analysis of *RAD*

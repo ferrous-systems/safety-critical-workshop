@@ -1,7 +1,7 @@
 ---
-properties: [
-    { kind: "goal" },
-]
+properties: { 
+    kind: "goal",
+}
 ---
 
 # `goal`: Goals for the *RAD* Product

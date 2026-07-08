@@ -1,7 +1,7 @@
 ---
-properties: [
-    { kind: "decision" },
-]
+properties: {
+    kind: "decision",
+}
 ---
 
 # `rad`: *RAD* Implementation Decisions

@@ -1,7 +1,7 @@
 ---
-properties: [
-    { kind: "risk" },
-]
+properties: {
+    kind: "risk",
+}
 ---
 
 # *RAD* Risk Analysis Improvements Phase 2
