@@ -1,4 +1,5 @@
 mantra:
+    rm -rf target/mantra-report
     mantra collect
     mantra report --output-dir=target/mantra-report
 
