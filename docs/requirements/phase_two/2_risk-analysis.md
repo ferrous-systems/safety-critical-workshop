@@ -8,7 +8,7 @@ properties: {
 
 This section adds risk analysis parts to apply everything learned during the workshop.
 
-## `risk.intensity`: 
+## `risk.intensity`: High radiation
 
 - **Parents:** ["goal.kill-cancer"]
 

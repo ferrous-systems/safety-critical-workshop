@@ -459,6 +459,7 @@ checksum = "11d3d7f243d5c5a8b9bb5d6dd2b1602c0cb0b9db1621bafc7ed66e35ff9fe092"
 [[package]]
 name = "mantra-macros"
 version = "0.8.0"
+source = "git+https://github.com/mhatzl/mantra?branch=mh%2Fno-std-macros#242c57c15de666c00456e4051338637387185c32"
 dependencies = [
  "mantra-procm",
 ]
@@ -466,6 +467,7 @@ dependencies = [
 [[package]]
 name = "mantra-procm"
 version = "0.8.0"
+source = "git+https://github.com/mhatzl/mantra?branch=mh%2Fno-std-macros#242c57c15de666c00456e4051338637387185c32"
 
 [[package]]
 name = "mockall"

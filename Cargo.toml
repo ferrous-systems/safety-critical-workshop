@@ -7,4 +7,4 @@ anyhow = "1"
 cortex-m = {version = "0.7.7", features = ["critical-section-single-core"]}
 cortex-m-rt = "0.7.5"
 defmt = "1"
-mantra-macros = { path = "/Users/manuelhatzl/Documents/Projects/mantra/mantra/langs/rust/mantra-macros" }
+mantra-macros = { git = "https://github.com/mhatzl/mantra", branch = "mh/no-std-macros" }

@@ -8,7 +8,7 @@ properties: {
 
 This section builds uppon the phase two system requirements to apply everything learned during the workshop.
 
-## `rad.sw.limit-radiation`:
+## `rad.sw.limit-radiation`: Limit radiation output
 
 - **Parents:** ["radiation.limit-output", "radiation.on-off", "rad.sw.operation"]
 

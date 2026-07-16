@@ -10,7 +10,7 @@ This requirement groups the implementation decisions derived from the [*RAD* sys
 
 ## `rad.mode`: Operation mode of *RAD*
 
-- **Parents:** [usage.start-stop"]
+- **Parents:** ["usage.start-stop"]
 
 Since the *RAD* must only support starting and stopping radiation therapy, it is sufficient to use the two modes:
 
@@ -21,7 +21,7 @@ Since the *RAD* must only support starting and stopping radiation therapy, it is
 
 ## `rad.ux`: User experience for *RAD*
 
-- **Parents:** ["usage", "risk.wrong-usage]
+- **Parents:** ["usage", "risk.wrong-usage"]
 
 This requirement groups all requirements that are related to the UI/UX of *RAD*.
 If *RAD* is easy to use for medical personal, the chance for wrong usage is reduced.

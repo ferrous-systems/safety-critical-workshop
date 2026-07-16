@@ -502,7 +502,8 @@ impl Board {
         })
     }
 
-    /// Update debounced input states
+    /// Update debounced input states.
+    /// This ensures that all inputs are updated at roughly the same time.
     pub fn update(&mut self) {
         let current_time_us = uptime_us();
 

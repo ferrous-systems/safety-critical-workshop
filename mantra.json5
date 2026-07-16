@@ -1,0 +1,25 @@
+{
+    name: "RAD",
+    repository: "https://github.com/ferrous-systems/safety-critical-workshop",
+    products: [
+        {
+            id: "RAD",
+            name: "$inherit",
+            repository: "$inherit",
+            base: "main",
+            requirements: [
+                {
+                    path: "docs/requirements",
+                    source: "markup",
+                }
+            ],
+            annotations: [
+                {
+                    path: "./",
+                    source: "content",
+                    pattern: "*.rs"
+                }
+            ]
+        }
+    ]
+}
