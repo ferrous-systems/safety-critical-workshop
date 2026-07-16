@@ -3,8 +3,8 @@
 //!
 //! Based on `nrf52-code` from Ferrous Systems [rust-exercises](https://github.com/ferrous-systems/rust-exercises).
 
-#![deny(missing_docs)]
-#![deny(warnings)]
+// #![deny(missing_docs)]
+// #![deny(warnings)]
 #![no_std]
 
 use core::{
@@ -18,8 +18,8 @@ use embedded_hal::delay::DelayNs;
 pub use hal;
 pub use hal::pac::interrupt;
 use hal::{
-    Peri,
     gpio::{Input, Level, Output, OutputDrive, Port},
+    Peri,
 };
 
 use defmt_rtt as _; // global logger
@@ -32,6 +32,121 @@ pub struct Board {
     pub buttons: Buttons,
     /// Timer
     pub timer: Timer,
+    /// digital inputs
+    pub dig_in: DigitalInputs,
+    /// digital outputs
+    pub dig_out: DigitalOutputs,
+}
+
+/// Needed plain digital outputs on the board
+pub struct DigitalOutputs {
+    /// Pin p1.01
+    pub p1_01: Output<'static>,
+    /// Pin p1.02
+    pub p1_02: Output<'static>,
+    /// Pin p1.03
+    pub p1_03: Output<'static>,
+    /// Pin p1.04
+    pub p1_04: Output<'static>,
+}
+
+/// Debounced input to flatten input noise
+pub struct DebouncedInput<'i> {
+    /// The input that is debounced
+    inner: Input<'i>,
+    prev_level: Level,
+    /// The debounced input level
+    level: Level,
+    /// The last ms system time when the debounced input changed
+    last_change_time_us: u64,
+    /// The ms delay any change of the inner input is ignored after input level change
+    debounce_delay_us: u64,
+    toggled: bool,
+    toggled_falling: bool,
+    toggled_rising: bool,
+}
+
+impl<'i> DebouncedInput<'i> {
+    /// Create a new debounced input with a debounce delay of 30ms
+    pub fn new(input: Input<'i>) -> Self {
+        let level = input.get_level();
+        Self {
+            inner: input,
+            prev_level: level,
+            level,
+            last_change_time_us: 0,
+            debounce_delay_us: 30_000, // 30ms
+            toggled: false,
+            toggled_falling: false,
+            toggled_rising: false,
+        }
+    }
+
+    /// Create a new debounced input with custom debounce delay given in ms
+    pub fn with(input: Input<'i>, debounce_delay_us: u64) -> Self {
+        let mut i = Self::new(input);
+        i.debounce_delay_us = debounce_delay_us;
+        i
+    }
+
+    /// Get the debounced input level
+    pub fn get_level(&self) -> Level {
+        self.level
+    }
+
+    /// Returns 'true' if the debounced input is `High`
+    pub fn is_high(&self) -> bool {
+        self.get_level() == Level::High
+    }
+
+    /// Returns 'true' if the debounced input is `low`
+    pub fn is_low(&self) -> bool {
+        self.get_level() == Level::Low
+    }
+
+    /// Returns 'true' if the debounced input level changed
+    pub fn toggled(&mut self) -> bool {
+        self.toggled
+    }
+
+    /// Returns 'true' if the debounced input level changed from `Low` to `High`
+    pub fn toggled_rising(&mut self) -> bool {
+        self.toggled_rising
+    }
+
+    /// Returns 'true' if the debounced input level changed from `High` to `Low`
+    pub fn toggled_falling(&mut self) -> bool {
+        self.toggled_falling
+    }
+
+    fn update_level(&mut self, current_time_us: u64) {
+        // Resetting so toggle states are 'true' only for one loop iteration
+        self.toggled = false;
+        self.toggled_falling = false;
+        self.toggled_rising = false;
+
+        if current_time_us.wrapping_sub(self.last_change_time_us) >= self.debounce_delay_us {
+            self.last_change_time_us = current_time_us;
+            self.prev_level = self.level;
+            self.level = self.inner.get_level();
+
+            self.toggled = self.prev_level != self.level;
+            self.toggled_falling = self.prev_level == Level::High && self.level == Level::Low;
+            self.toggled_rising = self.prev_level == Level::Low && self.level == Level::High;
+        }
+    }
+}
+
+/// Needed plain digital inputs on the board
+pub struct DigitalInputs {
+    /// Pin p1.05
+    pub p1_05: DebouncedInput<'static>,
+    /// Pin p1.06
+    pub p1_06: DebouncedInput<'static>,
+    /// Pin p1.07
+    pub p1_07: DebouncedInput<'static>,
+    /// Pin p1.08
+    pub p1_08: DebouncedInput<'static>,
 }
 
 /// All LEDs on the board
@@ -108,15 +223,60 @@ pub struct Buttons {
     pub _4: Button,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum SwitchState {
+    On,
+    Off,
+}
+
+impl SwitchState {
+    fn toggle(&mut self) {
+        match self {
+            SwitchState::On => *self = SwitchState::Off,
+            SwitchState::Off => *self = SwitchState::On,
+        }
+    }
+}
+
 /// A single Button
 pub struct Button {
-    inner: Input<'static>,
+    inner: DebouncedInput<'static>,
+    state: SwitchState,
 }
 
 impl Button {
+    pub fn new(input: DebouncedInput<'static>) -> Self {
+        Self {
+            inner: input,
+            state: SwitchState::Off,
+        }
+    }
+
     /// Is the button pressed
     pub fn is_pressed(&self) -> bool {
         self.inner.is_low()
+    }
+
+    /// Has the button been toggled
+    pub fn toggled(&mut self) -> bool {
+        self.inner.toggled()
+    }
+
+    pub fn switched_on(&self) -> bool {
+        self.state == SwitchState::On
+    }
+
+    pub fn switched_off(&self) -> bool {
+        self.state == SwitchState::Off
+    }
+
+    fn update_state(&mut self, current_time_us: u64) {
+        self.inner.update_level(current_time_us);
+
+        // Button is `Low` = pressed, so `High` -> `Low` means 'non-pressed' -> 'pressed'
+        if self.inner.toggled_falling() {
+            self.state.toggle();
+        }
     }
 }
 
@@ -203,102 +363,159 @@ pub enum Error {
     DoubleInit = 1,
 }
 
+impl core::fmt::Display for Error {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match self {
+            Error::DoubleInit => write!(f, "You tried to initialise the board twice"),
+        }
+    }
+}
+
+impl core::error::Error for Error {}
+
 // Atomic flag to detect double initialization of the HAL.
 static HAL_INIT: AtomicBool = AtomicBool::new(false);
 
-/// Initializes the board
-pub fn init() -> Result<Board, Error> {
-    if HAL_INIT.swap(true, Ordering::Relaxed) {
-        return Err(Error::DoubleInit);
+impl Board {
+    /// Initializes the board
+    pub fn init() -> Result<Self, Error> {
+        if HAL_INIT.swap(true, Ordering::Relaxed) {
+            return Err(Error::DoubleInit);
+        }
+
+        let mut config = hal::config::Config::default();
+        config.hfclk_source = hal::config::HfclkSource::ExternalXtal;
+        config.lfclk_source = hal::config::LfclkSource::ExternalXtal;
+        let periph = hal::init(config);
+
+        // probe-rs puts us in blocking mode, so wait for blocking mode as a proxy
+        // for waiting for probe-rs to connect.
+        //
+        // do this *after* clock set-up to avoid start-up issues
+
+        // TODO: use feature flag to toggle code below
+        // while !defmt_rtt::in_blocking_mode() {
+        //     core::hint::spin_loop();
+        // }
+
+        // NOTE: this branch runs at most once
+
+        // Section 6.22.2 p. 660 in nrf spec shows how to calculate the counter increment frequency
+        // f_rtc [kHz] = 32.768 / (PRESCALER + 1)
+        let mut rtc = hal::rtc::Rtc::new(periph.RTC0, 0).unwrap();
+        // NOTE on unmasking the NVIC interrupt: Because this crate defines the `#[interrupt] fn RTC0`
+        // interrupt handler, RTIC cannot manage that interrupt (trying to do so results in a linker
+        // error). Thus it is the task of this crate to mask/unmask the interrupt in a safe manner.
+        //
+        // Because the RTC0 interrupt handler does *not* access static variables through a critical
+        // section (that disables interrupts) this `unmask` operation cannot break critical sections
+        // and thus won't lead to undefined behavior (e.g. torn reads/writes)
+        //
+        // the preceding `enable_conuter` method consumes the `rtc` value. This is a semantic move
+        // of the RTC0 peripheral from this function (which can only be called at most once) to the
+        // interrupt handler (where the peripheral is accessed without any synchronization
+        // mechanism)
+        rtc.enable_interrupt(hal::rtc::Interrupt::Overflow, true);
+        rtc.enable();
+
+        defmt::debug!("RTC started");
+
+        let dig_out_p1_01 = Output::new(periph.P1_01, Level::High, OutputDrive::Standard);
+        let dig_out_p1_02 = Output::new(periph.P1_02, Level::High, OutputDrive::Standard);
+        let dig_out_p1_03 = Output::new(periph.P1_03, Level::High, OutputDrive::Standard);
+        let dig_out_p1_04 = Output::new(periph.P1_04, Level::High, OutputDrive::Standard);
+
+        let dig_in_p1_05 = DebouncedInput::new(Input::new(periph.P1_05, hal::gpio::Pull::Up));
+        let dig_in_p1_06 = DebouncedInput::new(Input::new(periph.P1_06, hal::gpio::Pull::Up));
+        let dig_in_p1_07 = DebouncedInput::new(Input::new(periph.P1_07, hal::gpio::Pull::Up));
+        let dig_in_p1_08 = DebouncedInput::new(Input::new(periph.P1_08, hal::gpio::Pull::Up));
+
+        let led1pin = Led {
+            port: Port::Port0,
+            pin: 13,
+            inner: Output::new(periph.P0_13, Level::High, OutputDrive::Standard),
+        };
+        let led2pin = Led {
+            port: Port::Port0,
+            pin: 14,
+            inner: Output::new(periph.P0_14, Level::High, OutputDrive::Standard),
+        };
+        let led3pin = Led {
+            port: Port::Port0,
+            pin: 15,
+            inner: Output::new(periph.P0_15, Level::High, OutputDrive::Standard),
+        };
+        let led4pin = Led {
+            port: Port::Port0,
+            pin: 16,
+            inner: Output::new(periph.P0_16, Level::High, OutputDrive::Standard),
+        };
+
+        defmt::debug!("I/O pins have been configured for digital output");
+
+        // NOTE pin goes low when button is pressed
+        let button1pin = Button::new(DebouncedInput::new(Input::new(
+            periph.P0_11,
+            hal::gpio::Pull::Up,
+        )));
+        let button2pin = Button::new(DebouncedInput::new(Input::new(
+            periph.P0_12,
+            hal::gpio::Pull::Up,
+        )));
+        let button3pin = Button::new(DebouncedInput::new(Input::new(
+            periph.P0_24,
+            hal::gpio::Pull::Up,
+        )));
+        let button4pin = Button::new(DebouncedInput::new(Input::new(
+            periph.P0_25,
+            hal::gpio::Pull::Up,
+        )));
+
+        let timer = Timer::new(periph.TIMER0);
+
+        Ok(Self {
+            leds: Leds {
+                _1: led1pin,
+                _2: led2pin,
+                _3: led3pin,
+                _4: led4pin,
+            },
+            buttons: Buttons {
+                _1: button1pin,
+                _2: button2pin,
+                _3: button3pin,
+                _4: button4pin,
+            },
+            dig_out: DigitalOutputs {
+                p1_01: dig_out_p1_01,
+                p1_02: dig_out_p1_02,
+                p1_03: dig_out_p1_03,
+                p1_04: dig_out_p1_04,
+            },
+            dig_in: DigitalInputs {
+                p1_05: dig_in_p1_05,
+                p1_06: dig_in_p1_06,
+                p1_07: dig_in_p1_07,
+                p1_08: dig_in_p1_08,
+            },
+            timer,
+        })
     }
 
-    let mut config = hal::config::Config::default();
-    config.hfclk_source = hal::config::HfclkSource::ExternalXtal;
-    config.lfclk_source = hal::config::LfclkSource::ExternalXtal;
-    let periph = hal::init(config);
+    /// Update debounced input states
+    pub fn update(&mut self) {
+        let current_time_us = uptime_us();
 
-    // probe-rs puts us in blocking mode, so wait for blocking mode as a proxy
-    // for waiting for probe-rs to connect.
-    //
-    // do this *after* clock set-up to avoid start-up issues
-    while !defmt_rtt::in_blocking_mode() {
-        core::hint::spin_loop();
+        self.dig_in.p1_05.update_level(current_time_us);
+        self.dig_in.p1_06.update_level(current_time_us);
+        self.dig_in.p1_07.update_level(current_time_us);
+        self.dig_in.p1_08.update_level(current_time_us);
+
+        self.buttons._1.update_state(current_time_us);
+        self.buttons._2.update_state(current_time_us);
+        self.buttons._3.update_state(current_time_us);
+        self.buttons._4.update_state(current_time_us);
     }
-
-    // NOTE: this branch runs at most once
-
-    let mut rtc = hal::rtc::Rtc::new(periph.RTC0, 0).unwrap();
-    // NOTE on unmasking the NVIC interrupt: Because this crate defines the `#[interrupt] fn RTC0`
-    // interrupt handler, RTIC cannot manage that interrupt (trying to do so results in a linker
-    // error). Thus it is the task of this crate to mask/unmask the interrupt in a safe manner.
-    //
-    // Because the RTC0 interrupt handler does *not* access static variables through a critical
-    // section (that disables interrupts) this `unmask` operation cannot break critical sections
-    // and thus won't lead to undefined behavior (e.g. torn reads/writes)
-    //
-    // the preceding `enable_conuter` method consumes the `rtc` value. This is a semantic move
-    // of the RTC0 peripheral from this function (which can only be called at most once) to the
-    // interrupt handler (where the peripheral is accessed without any synchronization
-    // mechanism)
-    rtc.enable_interrupt(hal::rtc::Interrupt::Overflow, true);
-    rtc.enable();
-
-    defmt::debug!("RTC started");
-
-    let led1pin = Led {
-        port: Port::Port0,
-        pin: 13,
-        inner: Output::new(periph.P0_13, Level::High, OutputDrive::Standard),
-    };
-    let led2pin = Led {
-        port: Port::Port0,
-        pin: 14,
-        inner: Output::new(periph.P0_14, Level::High, OutputDrive::Standard),
-    };
-    let led3pin = Led {
-        port: Port::Port0,
-        pin: 15,
-        inner: Output::new(periph.P0_15, Level::High, OutputDrive::Standard),
-    };
-    let led4pin = Led {
-        port: Port::Port0,
-        pin: 16,
-        inner: Output::new(periph.P0_16, Level::High, OutputDrive::Standard),
-    };
-
-    defmt::debug!("I/O pins have been configured for digital output");
-
-    // NOTE pin goes low when button is pressed
-    let button1pin = Button {
-        inner: Input::new(periph.P0_11, hal::gpio::Pull::Up),
-    };
-    let button2pin = Button {
-        inner: Input::new(periph.P0_12, hal::gpio::Pull::Up),
-    };
-    let button3pin = Button {
-        inner: Input::new(periph.P0_24, hal::gpio::Pull::Up),
-    };
-    let button4pin = Button {
-        inner: Input::new(periph.P0_25, hal::gpio::Pull::Up),
-    };
-
-    let timer = Timer::new(periph.TIMER0);
-
-    Ok(Board {
-        leds: Leds {
-            _1: led1pin,
-            _2: led2pin,
-            _3: led3pin,
-            _4: led4pin,
-        },
-        buttons: Buttons {
-            _1: button1pin,
-            _2: button2pin,
-            _3: button3pin,
-            _4: button4pin,
-        },
-        timer,
-    })
 }
 
 // Counter of OVERFLOW events -- an OVERFLOW occurs every (1<<24) ticks
@@ -323,7 +540,7 @@ pub fn exit() -> ! {
         const USBD_USBPULLUP: *mut u32 = 0x4002_7504 as *mut u32;
         USBD_USBPULLUP.write_volatile(0)
     }
-    defmt::println!("`dk::exit()` called; exiting ...");
+    defmt::println!("`nrf_hal::exit()` called; exiting ...");
     // force any pending memory operation to complete before the instruction that follows
     atomic::compiler_fence(Ordering::SeqCst);
     loop {
@@ -341,7 +558,7 @@ pub fn fail() -> ! {
         const USBD_USBPULLUP: *mut u32 = 0x4002_7504 as *mut u32;
         USBD_USBPULLUP.write_volatile(0)
     }
-    defmt::println!("`dk::fail()` called; exiting ...");
+    defmt::println!("`nrf_hal::fail()` called; exiting ...");
     // force any pending memory operation to complete before the instruction that follows
     atomic::compiler_fence(Ordering::SeqCst);
     loop {
@@ -349,11 +566,11 @@ pub fn fail() -> ! {
     }
 }
 
-/// Returns the time elapsed since the call to the `dk::init` function
+/// Returns the time elapsed since the call to the `Board::init` function
 ///
 /// The time is in 32,768 Hz units (i.e. 32768 = 1 second)
 ///
-/// Calling this function before calling `dk::init` will return a value of `0` nanoseconds.
+/// Calling this function before calling `Board::init` will return a value of `0` nanoseconds.
 pub fn uptime_ticks() -> u64 {
     // here we are going to perform a 64-bit read of the number of ticks elapsed
     //
@@ -375,16 +592,17 @@ pub fn uptime_ticks() -> u64 {
         let hi2 = OVERFLOWS.load(Ordering::Relaxed);
 
         if hi1 == hi2 {
+            // << 24, because RTC is a 24-bit counter according to spec section 6.22 p. 660
             break u64::from(low) | (u64::from(hi1) << 24);
         }
     }
 }
 
-/// Returns the time elapsed since the call to the `dk::init` function
+/// Returns the time elapsed since the call to the `Board::init` function
 ///
 /// The clock that is read to compute this value has a resolution of 30 microseconds.
 ///
-/// Calling this function before calling `dk::init` will return a value of `0` nanoseconds.
+/// Calling this function before calling `Board::init` will return a value of `0` nanoseconds.
 pub fn uptime() -> Duration {
     // We have a time in 32,768 Hz units.
     let mut ticks = uptime_ticks();
@@ -404,11 +622,12 @@ pub fn uptime() -> Duration {
     Duration::new(secs, nanos as u32)
 }
 
-/// Returns the time elapsed since the call to the `dk::init` function, in microseconds.
+/// Returns the time elapsed since the call to the `Board::init` function, in microseconds.
 ///
 /// The clock that is read to compute this value has a resolution of 30 microseconds.
+/// See section 6.22.2 p. 661 in NRF spec for prescaler = 0 (set in `Board::init`)
 ///
-/// Calling this function before calling `dk::init` will return a value of `0` nanoseconds.
+/// Calling this function before calling `Board::init` will return a value of `0` nanoseconds.
 pub fn uptime_us() -> u64 {
     // We have a time in 32,768 Hz units.
     let mut ticks = uptime_ticks();

@@ -1,3 +1,5 @@
+#![cfg_attr(not(test), no_std)]
+
 use mantra_macros::req;
 
 #[cfg(feature = "hw")]
@@ -115,7 +117,7 @@ pub enum Mode {
     Operation,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, defmt::Format)]
 pub enum RadError {
     EntranceDoorOpen,
     MissingSafeEnvironmentConfirmation,

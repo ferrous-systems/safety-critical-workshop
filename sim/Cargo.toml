@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-nrf-hal = { path = "../nrf-hal", optional = true }
-
-[features]
-hw = ["nrf-hal"]
+nrf-hal = { path = "../nrf-hal" }
+cortex-m-rt.workspace = true
+defmt.workspace = true
+mantra-macros.workspace = true

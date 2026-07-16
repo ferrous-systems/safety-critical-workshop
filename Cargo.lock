@@ -459,8 +459,6 @@ checksum = "11d3d7f243d5c5a8b9bb5d6dd2b1602c0cb0b9db1621bafc7ed66e35ff9fe092"
 [[package]]
 name = "mantra-macros"
 version = "0.8.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9de5a6189dee23d8b6f461134a3bc668a566f2b7a644fdd371e03602022ad89c"
 dependencies = [
  "mantra-procm",
 ]
@@ -468,8 +466,6 @@ dependencies = [
 [[package]]
 name = "mantra-procm"
 version = "0.8.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3065ca87c716ffcc7962e3e83f0b3834f11a14e729c003b28a4e43a83d6afc5e"
 
 [[package]]
 name = "mockall"
@@ -606,6 +602,7 @@ dependencies = [
 name = "rad"
 version = "0.1.0"
 dependencies = [
+ "cortex-m-rt",
  "defmt",
  "mantra-macros",
  "mockall",
@@ -659,6 +656,9 @@ checksum = "388a1df253eca08550bef6c72392cfe7c30914bf41df5269b68cbd6ff8f570a3"
 name = "sim"
 version = "0.1.0"
 dependencies = [
+ "cortex-m-rt",
+ "defmt",
+ "mantra-macros",
  "nrf-hal",
 ]
 

@@ -1,27 +1,6 @@
-#![no_main]
 #![no_std]
 
 use cortex_m_rt::exception;
-
-#[cortex_m_rt::entry]
-fn main() -> ! {
-    let mut hal = nrf_hal::init().unwrap();
-
-    let mut log_high_set = false;
-    let mut log_low_set = false;
-
-    loop {
-        if hal.dig_in.p1_05.is_high() && !log_high_set {
-            defmt::info!("Pin 1.05 is high");
-            log_high_set = true;
-            log_low_set = false;
-        } else if hal.dig_in.p1_05.is_low() && !log_low_set {
-            defmt::info!("Pin 1.05 is low");
-            log_high_set = false;
-            log_low_set = true;
-        }
-    }
-}
 
 /// Our custom panic handler.
 #[panic_handler]
@@ -43,5 +22,4 @@ fn defmt_panic() -> ! {
     nrf_hal::fail();
 }
 
-#[cfg(feature = "hw")]
 defmt::timestamp!("{=u64:tus}", nrf_hal::uptime_us());
