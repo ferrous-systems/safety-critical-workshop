@@ -10,3 +10,7 @@ sim-manual:
 [working-directory("rad")]
 rad-run:
     DEFMT_LOG=info cargo run --bin rad
+
+[working-directory("rad")]
+rad-unit-tests:
+    cargo test --lib --target=host-tuple --no-default-features

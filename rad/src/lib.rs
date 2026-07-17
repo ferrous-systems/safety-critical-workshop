@@ -5,7 +5,6 @@ use mantra_macros::req;
 #[cfg(feature = "hw")]
 use defmt::assert;
 
-#[cfg_attr(test, mockall_double::double)]
 use crate::hal::Hal;
 use crate::hal::LedIndicator;
 
@@ -28,6 +27,9 @@ impl Rad {
     ///
     /// Starts in `idle` mode.
     pub fn init() -> Self {
+        #[cfg(feature = "hw")]
+        defmt::info!("Starting up *RAD*");
+
         Self {
             mode: RadMode::Idle,
             start_triggered: false,
@@ -43,6 +45,8 @@ impl Rad {
 
                 mantra_macros::impl_req!("rad.sw.operation.start" => {
                     if hal.start_requested() && !self.start_triggered {
+                        #[cfg(feature = "hw")]
+                        defmt::info!("Start requested");
                         self.start_triggered = true;
                     } else if !hal.start_requested() && self.start_triggered {
                         self.start_triggered = false;
@@ -54,7 +58,10 @@ impl Rad {
                                 self.start_triggered = false;
                                 self.prev_mode = Some(self.mode);
 
-                                self.mode = RadMode::Operation
+                                self.mode = RadMode::Operation;
+
+                                #[cfg(feature = "hw")]
+                                defmt::info!("Switching into 'operation' mode");
                             },
                             Err(err) => {
                                 #[cfg(feature = "hw")]
@@ -67,6 +74,8 @@ impl Rad {
             RadMode::Operation => mantra_macros::impl_req!("rad.sw.operation" => {
                 mantra_macros::impl_req!("rad.sw.operation.stop" => {
                     if hal.stop_requested() && !self.stop_triggered {
+                        #[cfg(feature = "hw")]
+                        defmt::info!("Stop requested");
                         self.stop_triggered = true;
                     }
 
@@ -75,10 +84,13 @@ impl Rad {
                     }
 
                     mantra_macros::impl_req!("rad.sw.operation.post-condition" => {
-                        if !hal.radiation_active() {
+                        if self.stop_triggered && !hal.radiation_active() {
                             self.mode = RadMode::Idle;
                             self.prev_mode = Some(RadMode::Operation);
                             self.stop_triggered = false;
+
+                            #[cfg(feature = "hw")]
+                            defmt::info!("Switching into 'idle' mode");
                         }
                     })
                 });
@@ -87,6 +99,8 @@ impl Rad {
                 if !self.stop_triggered && self.prev_mode == Some(RadMode::Idle) {
                     hal.start_radiation();
                 }
+
+                self.prev_mode = Some(RadMode::Operation);
             }),
         }
 
@@ -147,7 +161,8 @@ pub enum RadMode {
     Operation,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, defmt::Format)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(feature = "hw", derive(defmt::Format))]
 pub enum RadError {
     EntranceDoorOpen,
     MissingSafeEnvironmentConfirmation,

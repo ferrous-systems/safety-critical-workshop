@@ -1,6 +1,6 @@
 use mantra_macros::req_test;
 
-use crate::{hal::MockHal, Rad, RadError};
+use crate::{hal::MockHal, operation_conditions_fulfilled, Rad, RadError};
 
 #[req_test("rad.sw.operation.pre-condition")]
 #[test]
@@ -11,7 +11,7 @@ fn operation_condition_fulfilled() {
     mock.expect_safe_environment_confirmed().return_const(true);
 
     assert!(
-        let res = operation_conditions_fulfilled(&mock).is_ok(),
+        operation_conditions_fulfilled(&mock).is_ok(),
         "Pre-condition was mocked to be fulfilled"
     );
 }
