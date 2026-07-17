@@ -7,6 +7,7 @@ use defmt::assert;
 
 #[cfg_attr(test, mockall_double::double)]
 use crate::hal::Hal;
+use crate::hal::LedIndicator;
 
 mod hal;
 
@@ -16,101 +17,130 @@ mod tests;
 /// The *RAD* control structure.
 pub struct Rad {
     /// Current mode *RAD* is in
-    mode: Mode,
-    /// HAL for *RAD*
-    hal: Hal,
+    mode: RadMode,
+    start_triggered: bool,
+    stop_triggered: bool,
+    prev_mode: Option<RadMode>,
 }
 
 impl Rad {
     /// Initialize *RAD*.
     ///
     /// Starts in `idle` mode.
-    pub fn init(hal: Hal) -> Self {
+    pub fn init() -> Self {
         Self {
-            mode: Mode::Idle,
-            hal,
+            mode: RadMode::Idle,
+            start_triggered: false,
+            stop_triggered: false,
+            prev_mode: None,
         }
     }
 
-    pub fn run(&mut self) -> ! {
-        let mut start_triggered = false;
-        let mut stop_triggered = false;
-        let mut prev_mode = None;
+    pub fn update(&mut self, hal: &mut impl Hal) {
+        match self.mode {
+            RadMode::Idle => mantra_macros::impl_req!("rad.sw.idle" => {
+                assert!(!hal.radiation_active(), "Radiation must not be active in `idle` mode");
 
-        loop {
-            match self.mode {
-                Mode::Idle => mantra_macros::impl_req!("rad.sw.idle" => {
-                    assert!(!self.hal.radiation_active(), "Radiation must not be active in `idle` mode");
+                mantra_macros::impl_req!("rad.sw.operation.start" => {
+                    if hal.start_requested() && !self.start_triggered {
+                        self.start_triggered = true;
+                    } else if !hal.start_requested() && self.start_triggered {
+                        self.start_triggered = false;
+                    }
 
-                    mantra_macros::impl_req!("rad.sw.operation.start" => {
-                        if self.hal.start_requested() && !start_triggered {
-                            start_triggered = true;
-                        } else if !self.hal.start_requested() && start_triggered {
-                            start_triggered = false;
-                        }
+                    if self.start_triggered {
+                        match operation_conditions_fulfilled(hal) {
+                            Ok(_) => {
+                                self.start_triggered = false;
+                                self.prev_mode = Some(self.mode);
 
-                        if start_triggered {
-                            match self.operation_conditions_fulfilled() {
-                                Ok(_) => {
-                                    start_triggered = false;
-                                    prev_mode = Some(self.mode);
-
-                                    self.mode = Mode::Operation
-                                },
-                                Err(err) => {
-                                    #[cfg(feature = "hw")]
-                                    defmt::warn!("Could not start operation due to error: '{}'", err);
-                                }
+                                self.mode = RadMode::Operation
+                            },
+                            Err(err) => {
+                                #[cfg(feature = "hw")]
+                                defmt::warn!("Could not start operation due to error: '{}'", err);
                             }
+                        }
+                    }
+                })
+            }),
+            RadMode::Operation => mantra_macros::impl_req!("rad.sw.operation" => {
+                mantra_macros::impl_req!("rad.sw.operation.stop" => {
+                    if hal.stop_requested() && !self.stop_triggered {
+                        self.stop_triggered = true;
+                    }
+
+                    if self.stop_triggered {
+                        hal.stop_radiation();
+                    }
+
+                    mantra_macros::impl_req!("rad.sw.operation.post-condition" => {
+                        if !hal.radiation_active() {
+                            self.mode = RadMode::Idle;
+                            self.prev_mode = Some(RadMode::Operation);
+                            self.stop_triggered = false;
                         }
                     })
-                }),
-                Mode::Operation => mantra_macros::impl_req!("rad.sw.operation" => {
-                    mantra_macros::impl_req!("rad.sw.operation.stop" => {
-                        if self.hal.stop_requested() && !stop_triggered {
-                            stop_triggered = true;
-                        }
+                });
 
-                        if stop_triggered {
-                            self.hal.stop_radiation();
-                        }
+                // we entered operation mode => start RAD
+                if !self.stop_triggered && self.prev_mode == Some(RadMode::Idle) {
+                    hal.start_radiation();
+                }
+            }),
+        }
 
-                        mantra_macros::impl_req!("rad.sw.operation.post-condition" => {
-                            if !self.hal.radiation_active() {
-                                self.mode = Mode::Idle;
-                                prev_mode = Some(Mode::Operation);
-                                stop_triggered = false;
-                            }
-                        })
-                    });
+        self.update_indicators(hal);
+    }
 
-                    // we entered operation mode => start RAD
-                    if !stop_triggered && prev_mode == Some(Mode::Idle) {
-                        self.hal.start_radiation();
-                    }
-                }),
+    #[req("rad.sw.indicator")]
+    fn update_indicators(&self, hal: &mut impl Hal) {
+        match self.mode {
+            RadMode::Idle => {
+                hal.set_mode_indicator(LedIndicator::Off);
+            }
+            RadMode::Operation => {
+                hal.set_mode_indicator(LedIndicator::On);
             }
         }
-    }
 
-    #[req("rad.sw.operation.pre-condition")]
-    fn operation_conditions_fulfilled(&self) -> Result<(), RadError> {
-        if !self.hal.entrance_door_closed() {
-            return Err(RadError::EntranceDoorOpen);
+        if hal.entrance_door_closed() {
+            hal.set_entrance_door_indicator(LedIndicator::On);
+        } else {
+            hal.set_entrance_door_indicator(LedIndicator::Off);
         }
 
-        if !self.hal.safe_environment_confirmed() {
-            return Err(RadError::MissingSafeEnvironmentConfirmation);
+        if hal.safe_environment_confirmed() {
+            hal.set_confirmation_switch_indicator(LedIndicator::On);
+        } else {
+            hal.set_confirmation_switch_indicator(LedIndicator::Off);
         }
 
-        Ok(())
+        if hal.radiation_active() {
+            hal.set_radiation_relay_indicator(LedIndicator::On);
+        } else {
+            hal.set_radiation_relay_indicator(LedIndicator::Off);
+        }
     }
+}
+
+#[req("rad.sw.operation.pre-condition")]
+fn operation_conditions_fulfilled(hal: &impl Hal) -> Result<(), RadError> {
+    if !hal.entrance_door_closed() {
+        return Err(RadError::EntranceDoorOpen);
+    }
+
+    if !hal.safe_environment_confirmed() {
+        return Err(RadError::MissingSafeEnvironmentConfirmation);
+    }
+
+    Ok(())
 }
 
 /// Possible modes of the *RAD* product.
 #[req("rad.mode")]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Mode {
+pub enum RadMode {
     /// *RAD* is waiting for input. No radiation is output
     Idle,
     /// *RAD* is performing radiation therapy

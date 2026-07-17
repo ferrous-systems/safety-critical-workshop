@@ -58,6 +58,7 @@ This assumes that the door is the only way to access the safe environment and th
 #### `rad.hw.door-sensor.status-LED`: Status LED for door sensor
 
 - **Parents:** ["rad.ux"]
+- **Optional:** true
 
 A LED will be used to indicate if the entrance door is closed (LED is ON) or open (LED is OFF).
 
@@ -71,6 +72,7 @@ A key switch will be used for the safe-environment confirmation that must be giv
 #### `rad.hw.confirmation-switch.status-LED`: Status LED for confirmation switch
 
 - **Parents:** ["rad.ux"]
+- **Optional:** true
 
 A LED will be used to indicate if the confirmation switch is locked/confirmed (LED is ON) or unlocked/unconfirmed (LED is OFF).
 
@@ -188,3 +190,18 @@ This will change *RAD* to the `idle` mode and deactivate radiation output.
 - **Parents:** ["rad.hw.radiation-relay"]
 
 The *RAD* must ensure that radiation output is turned off before switching to `idle` mode.
+
+### `rad.sw.indicator`: Set LED indicators
+
+- **Parents:** [
+    "rad.ux.mode-indicator",
+    "rad.hw.door-sensor.status-LED",
+    "rad.hw.confirmation-switch.status-LED",
+    "rad.hw.radiation-relay.status-LED"
+]
+
+The *RAD* must indicate the current mode it is in and the state of the enclosing door, the confirmation switch
+and the radiation output so personal can get a better understanding of what is happening.
+
+Since the status-LED can only be `ON` or `OFF`, the `operation` mode is indicated by the LED being `ON`,
+while the led being `OFF` indicates that *RAD* is in `idle`.

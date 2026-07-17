@@ -10,10 +10,8 @@ fn operation_condition_fulfilled() {
     mock.expect_entrance_door_closed().return_const(true);
     mock.expect_safe_environment_confirmed().return_const(true);
 
-    let rad = Rad::init(mock);
-
     assert!(
-        rad.operation_conditions_fulfilled().is_ok(),
+        let res = operation_conditions_fulfilled(&mock).is_ok(),
         "Pre-condition was mocked to be fulfilled"
     );
 }
@@ -26,9 +24,7 @@ fn operation_condition_unfulfilled_door() {
     mock.expect_entrance_door_closed().return_const(false);
     mock.expect_safe_environment_confirmed().return_const(true);
 
-    let rad = Rad::init(mock);
-
-    let res = rad.operation_conditions_fulfilled();
+    let res = operation_conditions_fulfilled(&mock);
 
     assert!(res.is_err(), "Pre-condition was mocked to be unfulfilled");
     assert_eq!(res, Err(RadError::EntranceDoorOpen));
@@ -42,9 +38,7 @@ fn operation_condition_unfulfilled_confirmation() {
     mock.expect_entrance_door_closed().return_const(true);
     mock.expect_safe_environment_confirmed().return_const(false);
 
-    let rad = Rad::init(mock);
-
-    let res = rad.operation_conditions_fulfilled();
+    let res = operation_conditions_fulfilled(&mock);
 
     assert!(res.is_err(), "Pre-condition was mocked to be unfulfilled");
     assert_eq!(res, Err(RadError::MissingSafeEnvironmentConfirmation));

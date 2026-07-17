@@ -5,21 +5,13 @@ use cortex_m_rt::exception;
 
 #[cortex_m_rt::entry]
 fn main() -> ! {
-    let mut hal = nrf_hal::init().unwrap();
-
-    let mut log_high_set = false;
-    let mut log_low_set = false;
+    let mut board = nrf_hal::Board::init().unwrap();
+    let mut rad = rad::Rad::init();
 
     loop {
-        if hal.dig_in.p1_05.is_high() && !log_high_set {
-            defmt::info!("Pin 1.05 is high");
-            log_high_set = true;
-            log_low_set = false;
-        } else if hal.dig_in.p1_05.is_low() && !log_low_set {
-            defmt::info!("Pin 1.05 is low");
-            log_high_set = false;
-            log_low_set = true;
-        }
+        rad.update(&mut board);
+
+        board.update();
     }
 }
 
