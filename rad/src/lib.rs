@@ -7,6 +7,7 @@ use defmt::assert;
 
 use crate::hal::Hal;
 use crate::hal::LedIndicator;
+use crate::hal::OutputState;
 
 mod hal;
 
@@ -130,10 +131,10 @@ impl Rad {
             hal.set_confirmation_switch_indicator(LedIndicator::Off);
         }
 
-        if hal.radiation_active() {
-            hal.set_radiation_relay_indicator(LedIndicator::On);
+        if hal.radiation_output_state() == OutputState::On {
+            hal.set_radiation_output_indicator(LedIndicator::On);
         } else {
-            hal.set_radiation_relay_indicator(LedIndicator::Off);
+            hal.set_radiation_output_indicator(LedIndicator::Off);
         }
     }
 }

@@ -8,6 +8,12 @@ pub enum LedIndicator {
     Off,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum OutputState {
+    On,
+    Off,
+}
+
 #[req("rad.sw.hal")]
 #[cfg_attr(test, automock)]
 pub trait Hal {
@@ -23,6 +29,9 @@ pub trait Hal {
     /// [req_link("rad.hw.radiation-relay")]
     fn stop_radiation(&mut self);
 
+    /// [req_link("rad.hw.radiation-relay")]
+    fn radiation_output_state(&self) -> OutputState;
+
     /// [req_link("rad.hw.radiation-sensor")]
     fn radiation_active(&self) -> bool;
 
@@ -32,7 +41,7 @@ pub trait Hal {
     /// [req_link("rad.hw.confirmation-switch")]
     fn safe_environment_confirmed(&self) -> bool;
 
-    /// [req_link("rad.ux.mode-indicator")]
+    /// [req_link("rad.hw.mode-indicator")]
     fn set_mode_indicator(&mut self, indicator: LedIndicator);
 
     /// [req_link("rad.hw.door-sensor.status-LED")]
@@ -42,7 +51,7 @@ pub trait Hal {
     fn set_confirmation_switch_indicator(&mut self, indicator: LedIndicator);
 
     /// [req_link("rad.hw.radiation-relay.status-LED")]
-    fn set_radiation_relay_indicator(&mut self, indicator: LedIndicator);
+    fn set_radiation_output_indicator(&mut self, indicator: LedIndicator);
 }
 
 macro_rules! led_ctrl {
@@ -78,6 +87,15 @@ impl Hal for nrf_hal::Board {
         self.dig_out.p1_01.set_high();
     }
 
+    #[req_link("rad.hw.radiation-relay")]
+    fn radiation_output_state(&self) -> OutputState {
+        if self.dig_out.p1_01.is_set_low() {
+            OutputState::On
+        } else {
+            OutputState::Off
+        }
+    }
+
     #[req_link("rad.hw.radiation-sensor")]
     fn radiation_active(&self) -> bool {
         // TODO: replace with analog input once board has support
@@ -94,7 +112,7 @@ impl Hal for nrf_hal::Board {
         self.dig_in.p1_07.is_low()
     }
 
-    #[req_link("rad.ux.mode-indicator")]
+    #[req_link("rad.hw.mode-indicator")]
     fn set_mode_indicator(&mut self, indicator: LedIndicator) {
         led_ctrl!(indicator, self.leds._1)
     }
@@ -110,7 +128,7 @@ impl Hal for nrf_hal::Board {
     }
 
     #[req_link("rad.hw.radiation-relay.status-LED")]
-    fn set_radiation_relay_indicator(&mut self, indicator: LedIndicator) {
+    fn set_radiation_output_indicator(&mut self, indicator: LedIndicator) {
         led_ctrl!(indicator, self.leds._4)
     }
 }

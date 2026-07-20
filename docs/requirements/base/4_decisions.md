@@ -30,7 +30,8 @@ If *RAD* is easy to use for medical personal, the chance for wrong usage is redu
 
 - **Parents:** ["rad.mode"]
 
-A LED will be used to indicate if *RAD* is performing radiation therapy (LED is ON) or is in `idle` mode (LED is OFF).
+*RAD* must have an indicator to show if it is in `operation` mode  or in `idle` mode,
+so personal can better observe the state of *RAD*.
 
 ## `rad.hw`: Hardware requirements for *RAD*
 
@@ -38,6 +39,12 @@ A LED will be used to indicate if *RAD* is performing radiation therapy (LED is 
 
 This requirement groups all hardware requirements.
 Manual verification is propagated to all sub-requirements, since hardware requirements cannot easily be automatically tested.
+
+### `rad.hw.mode-indicator`: Indicate mode of *RAD*
+
+- **Parents:** ["rad.ux.mode-indicator"]
+
+A LED will be used to indicate if *RAD* is performing radiation therapy (LED is ON) or is in `idle` mode (LED is OFF).
 
 ### `rad.hw.start-stop-switch`: Use switch to start/stop radiation therapy
 
@@ -61,7 +68,6 @@ This assumes that the door is the only way to access the safe environment and th
 - **Optional:** true
 
 A LED will be used to indicate if the entrance door is closed (LED is ON) or open (LED is OFF).
-
 
 ### `rad.hw.confirmation-switch`: Use key-switch for confirmation
 
@@ -99,7 +105,7 @@ An analog sensor is used to measure the radiation output.
 ### `rad.hw.mcu`: *RAD* microcontroller
 
 - **Parents:** [
-    "rad.ux.mode-indicator",
+    "rad.hw.mode-indicator",
     "rad.hw.start-stop-switch",
     "rad.hw.door-sensor",
     "rad.hw.confirmation-switch",
@@ -110,19 +116,21 @@ An analog sensor is used to measure the radiation output.
     "rad.hw.radiation-relay.status-LED"
     ]
 
-The chosen microcontroller for *RAD* must support the number of inputs and outputs required by all requirements listed under [req_link("rad.hw")] and [req_link("rad.ux.mode-indicator")].
+The chosen microcontroller for *RAD* must support the number of inputs and outputs required by all requirements listed under [req_link("rad.hw")].
 
 **Digital Inputs:**
 - Start/Stop switch ... [req_link("rad.hw.start-stop-switch")]
 - Door sensor ... [req_link("rad.hw.door-sensor")]
 - Confirmation key switch ... [req_link("rad.hw.confirmation-switch")]
+
+**Analog Inputs:**
 - Radiation sensor ... [req_link("rad.hw.radiation-sensor")]
 
 **Digital Outputs:**
-- *RAD* operation mode LED ... [req_link("rad.ux.mode-indicator")]
+- *RAD* operation mode LED ... [req_link("rad.hw.mode-indicator")]
 - Door sensor state LED ... [req_link("rad.hw.door-sensor.status-LED")]
 - Confirmation switch state LED ... [req_link("rad.hw.confirmation-switch.status-LED")]
-- Radiation relay ... [req_link("rad.hw.radiation-relay")]
+- Radiation relay (ideally PWM) ... [req_link("rad.hw.radiation-relay")]
 - Radiation relay state LED ... [req_link("rad.hw.radiation-relay.status-LED")]
 
 The demo is built for the [nRF52840 DK](https://www.nordicsemi.com/Products/Development-hardware/nrf52840-dk), but other microcontrollers may also fit.
@@ -135,7 +143,7 @@ This requirement groups all software requirements.
 
 - **Parents:** [
     "rad.hw.mcu",
-    "rad.ux.mode-indicator",
+    "rad.hw.mode-indicator",
     "rad.hw.start-stop-switch",
     "rad.hw.door-sensor",
     "rad.hw.confirmation-switch",
@@ -194,7 +202,7 @@ The *RAD* must ensure that radiation output is turned off before switching to `i
 ### `rad.sw.indicator`: Set LED indicators
 
 - **Parents:** [
-    "rad.ux.mode-indicator",
+    "rad.hw.mode-indicator",
     "rad.hw.door-sensor.status-LED",
     "rad.hw.confirmation-switch.status-LED",
     "rad.hw.radiation-relay.status-LED"
