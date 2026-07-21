@@ -7,6 +7,10 @@ mantra:
 sim-manual:
     DEFMT_LOG=info cargo run --bin manual
 
+[working-directory("sim")]
+sim-start-stop:
+    DEFMT_LOG=info cargo run --bin start_stop_flow
+
 [working-directory("rad")]
 rad-run:
     DEFMT_LOG=info cargo run --bin rad

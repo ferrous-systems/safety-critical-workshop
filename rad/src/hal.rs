@@ -52,6 +52,8 @@ pub trait Hal {
 
     /// [req_link("rad.hw.radiation-relay.status-LED")]
     fn set_radiation_output_indicator(&mut self, indicator: LedIndicator);
+
+    fn set_start_stop_indicator(&mut self);
 }
 
 macro_rules! led_ctrl {
@@ -67,29 +69,29 @@ macro_rules! led_ctrl {
 impl Hal for nrf_hal::Board {
     #[req_link("rad.hw.start-stop-switch")]
     fn start_requested(&self) -> bool {
-        self.dig_in.p1_05.is_low()
+        self.dig_in.p1_05.is_high()
     }
 
     #[req_link("rad.hw.start-stop-switch")]
     fn stop_requested(&self) -> bool {
-        self.dig_in.p1_05.is_high()
+        self.dig_in.p1_05.is_low()
     }
 
     #[req_link("rad.hw.radiation-relay")]
     fn start_radiation(&mut self) {
         defmt::info!("Starting radiation output");
-        self.dig_out.p1_01.set_low();
+        self.dig_out.p1_01.set_high();
     }
 
     #[req_link("rad.hw.radiation-relay")]
     fn stop_radiation(&mut self) {
         defmt::info!("Stopping radiation output");
-        self.dig_out.p1_01.set_high();
+        self.dig_out.p1_01.set_low();
     }
 
     #[req_link("rad.hw.radiation-relay")]
     fn radiation_output_state(&self) -> OutputState {
-        if self.dig_out.p1_01.is_set_low() {
+        if self.dig_out.p1_01.is_set_high() {
             OutputState::On
         } else {
             OutputState::Off
@@ -99,22 +101,29 @@ impl Hal for nrf_hal::Board {
     #[req_link("rad.hw.radiation-sensor")]
     fn radiation_active(&self) -> bool {
         // TODO: replace with analog input once board has support
-        self.dig_in.p1_08.is_low()
+        self.dig_in.p1_08.is_high()
     }
 
     #[req_link("rad.hw.door-sensor")]
     fn entrance_door_closed(&self) -> bool {
-        self.dig_in.p1_06.is_low()
+        self.dig_in.p1_06.is_high()
     }
 
     #[req_link("rad.hw.confirmation-switch")]
     fn safe_environment_confirmed(&self) -> bool {
-        self.dig_in.p1_07.is_low()
+        self.dig_in.p1_07.is_high()
     }
 
     #[req_link("rad.hw.mode-indicator")]
     fn set_mode_indicator(&mut self, indicator: LedIndicator) {
-        led_ctrl!(indicator, self.leds._1)
+        led_ctrl!(indicator, self.leds._1);
+
+        // Used to inform the simulation in which mode the RAD is in
+        #[cfg(feature = "hw-testing")]
+        match indicator {
+            LedIndicator::On => self.dig_out.p1_02.set_high(),
+            LedIndicator::Off => self.dig_out.p1_02.set_low(),
+        }
     }
 
     #[req_link("rad.hw.door-sensor.status-LED")]
@@ -130,5 +139,13 @@ impl Hal for nrf_hal::Board {
     #[req_link("rad.hw.radiation-relay.status-LED")]
     fn set_radiation_output_indicator(&mut self, indicator: LedIndicator) {
         led_ctrl!(indicator, self.leds._4)
+    }
+
+    fn set_start_stop_indicator(&mut self) {
+        if self.start_requested() {
+            self.dig_out.p1_03.set_high();
+        } else {
+            self.dig_out.p1_03.set_low();
+        }
     }
 }

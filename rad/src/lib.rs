@@ -136,6 +136,9 @@ impl Rad {
         } else {
             hal.set_radiation_output_indicator(LedIndicator::Off);
         }
+
+        #[cfg(feature = "hw-testing")]
+        hal.set_start_stop_indicator();
     }
 }
 

@@ -168,6 +168,16 @@ pub struct Led {
     inner: Output<'static>,
 }
 
+impl defmt::Format for Led {
+    fn format(&self, fmt: defmt::Formatter) {
+        if self.is_on() {
+            defmt::write!(fmt, "ON")
+        } else {
+            defmt::write!(fmt, "OFF")
+        }
+    }
+}
+
 impl Led {
     /// Turns on the LED
     pub fn on(&mut self) {
@@ -420,10 +430,10 @@ impl Board {
 
         defmt::debug!("RTC started");
 
-        let dig_out_p1_01 = Output::new(periph.P1_01, Level::High, OutputDrive::Standard);
-        let dig_out_p1_02 = Output::new(periph.P1_02, Level::High, OutputDrive::Standard);
-        let dig_out_p1_03 = Output::new(periph.P1_03, Level::High, OutputDrive::Standard);
-        let dig_out_p1_04 = Output::new(periph.P1_04, Level::High, OutputDrive::Standard);
+        let dig_out_p1_01 = Output::new(periph.P1_01, Level::Low, OutputDrive::Standard);
+        let dig_out_p1_02 = Output::new(periph.P1_02, Level::Low, OutputDrive::Standard);
+        let dig_out_p1_03 = Output::new(periph.P1_03, Level::Low, OutputDrive::Standard);
+        let dig_out_p1_04 = Output::new(periph.P1_04, Level::Low, OutputDrive::Standard);
 
         let dig_in_p1_05 = DebouncedInput::new(Input::new(periph.P1_05, hal::gpio::Pull::Up));
         let dig_in_p1_06 = DebouncedInput::new(Input::new(periph.P1_06, hal::gpio::Pull::Up));
@@ -516,6 +526,27 @@ impl Board {
         self.buttons._2.update_state(current_time_us);
         self.buttons._3.update_state(current_time_us);
         self.buttons._4.update_state(current_time_us);
+    }
+
+    pub fn sys_time(&self) -> Duration {
+        uptime()
+    }
+
+    pub fn print_io(&self) {
+        defmt::info!("Out p1.01 is '{}'", &self.dig_out.p1_01.get_output_level());
+        defmt::info!("Out p1.02 is '{}'", &self.dig_out.p1_02.get_output_level());
+        defmt::info!("Out p1.03 is '{}'", &self.dig_out.p1_03.get_output_level());
+        defmt::info!("Out p1.04 is '{}'", &self.dig_out.p1_04.get_output_level());
+
+        defmt::info!("Inp p1.05 is '{}'", &self.dig_in.p1_05.get_level());
+        defmt::info!("Inp p1.06 is '{}'", &self.dig_in.p1_06.get_level());
+        defmt::info!("Inp p1.07 is '{}'", &self.dig_in.p1_07.get_level());
+        defmt::info!("Inp p1.08 is '{}'", &self.dig_in.p1_08.get_level());
+
+        defmt::info!("LED1 is '{}'", &self.leds._1);
+        defmt::info!("LED2 is '{}'", &self.leds._2);
+        defmt::info!("LED3 is '{}'", &self.leds._3);
+        defmt::info!("LED4 is '{}'", &self.leds._4);
     }
 }
 

@@ -7,37 +7,46 @@ use sim as _;
 fn main() -> ! {
     let mut board = nrf_hal::Board::init().unwrap();
 
+    let mut last_printed = board.sys_time();
+
     loop {
         if board.buttons._1.switched_on() {
-            board.dig_out.p1_01.set_low();
+            board.dig_out.p1_01.set_high();
             board.leds._1.on();
         } else {
-            board.dig_out.p1_01.set_high();
+            board.dig_out.p1_01.set_low();
             board.leds._1.off();
         }
 
         if board.buttons._2.switched_on() {
-            board.dig_out.p1_02.set_low();
+            board.dig_out.p1_02.set_high();
             board.leds._2.on();
         } else {
-            board.dig_out.p1_02.set_high();
+            board.dig_out.p1_02.set_low();
             board.leds._2.off();
         }
 
         if board.buttons._3.switched_on() {
-            board.dig_out.p1_03.set_low();
+            board.dig_out.p1_03.set_high();
             board.leds._3.on();
         } else {
-            board.dig_out.p1_03.set_high();
+            board.dig_out.p1_03.set_low();
             board.leds._3.off();
         }
 
         if board.buttons._4.switched_on() {
-            board.dig_out.p1_04.set_low();
+            board.dig_out.p1_04.set_high();
             board.leds._4.on();
         } else {
-            board.dig_out.p1_04.set_high();
+            board.dig_out.p1_04.set_low();
             board.leds._4.off();
+        }
+
+        let curr_time = board.sys_time();
+        if last_printed.abs_diff(curr_time).as_secs() > 2 {
+            last_printed = curr_time;
+
+            board.print_io();
         }
 
         board.update();

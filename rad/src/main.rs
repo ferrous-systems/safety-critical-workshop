@@ -1,6 +1,8 @@
 #![no_main]
 #![no_std]
 
+use core::time::Duration;
+
 use cortex_m_rt::exception;
 
 #[cortex_m_rt::entry]
@@ -8,10 +10,14 @@ fn main() -> ! {
     let mut board = nrf_hal::Board::init().unwrap();
     let mut rad = rad::Rad::init();
 
+    board.print_io();
+
     loop {
+        board.update();
         rad.update(&mut board);
 
-        board.update();
+        board.print_io();
+        board.timer.wait(Duration::from_millis(2000));
     }
 }
 

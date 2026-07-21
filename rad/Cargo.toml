@@ -14,5 +14,6 @@ mockall = "0.15.0"
 mockall_double = "0.3.1"
 
 [features]
-default = ["hw"]
+default = ["hw", "hw-testing"]
 hw = ["nrf-hal", "defmt"]
+hw-testing = ["hw"]
