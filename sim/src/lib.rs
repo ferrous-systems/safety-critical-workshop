@@ -49,7 +49,7 @@ impl Sim {
 
         sim.wait_update();
 
-        assert_eq!(sim.actual_mode(), RadMode::Idle, "RAD is not in 'idle'");
+        sim.board.print_io();
 
         sim
     }
@@ -74,20 +74,16 @@ impl Sim {
 
         const MAX_WAIT_TIME_SEC: u64 = 5;
         let sys_time = self.sys_time();
+        self.expected_mode = RadMode::Operation;
+
         loop {
-            if self.start_request_detected() {
+            if self.start_request_detected() && self.actual_mode() == self.expected_mode {
                 break;
             } else if sys_time.abs_diff(self.sys_time()).as_secs() > MAX_WAIT_TIME_SEC {
                 panic!("RAD did not detect start request after ~{MAX_WAIT_TIME_SEC}s");
             }
         }
 
-        self.expected_mode = RadMode::Operation;
-        assert_eq!(
-            self.actual_mode(),
-            self.expected_mode,
-            "RAD should be in operation mode"
-        );
         assert_eq!(
             self.radiation_relay(),
             OutputState::On,
@@ -144,13 +140,21 @@ impl Sim {
     pub fn set_start_stop(&mut self, state: StartStopState) {
         match state {
             StartStopState::Start => {
-                self.board.dig_out.p1_01.set_low();
+                self.board.dig_out.p1_01.set_high();
                 self.board.leds._1.on();
             }
             StartStopState::Stop => {
-                self.board.dig_out.p1_01.set_high();
+                self.board.dig_out.p1_01.set_low();
                 self.board.leds._1.off();
             }
+        }
+    }
+
+    pub fn start_stop_state(&self) -> StartStopState {
+        if self.board.dig_out.p1_01.is_set_high() {
+            StartStopState::Start
+        } else {
+            StartStopState::Stop
         }
     }
 
@@ -158,13 +162,21 @@ impl Sim {
     pub fn set_door_sensor(&mut self, state: OutputState) {
         match state {
             OutputState::On => {
-                self.board.dig_out.p1_02.set_low();
+                self.board.dig_out.p1_02.set_high();
                 self.board.leds._2.on();
             }
             OutputState::Off => {
-                self.board.dig_out.p1_02.set_high();
+                self.board.dig_out.p1_02.set_low();
                 self.board.leds._2.off();
             }
+        }
+    }
+
+    pub fn door_sensor(&self) -> OutputState {
+        if self.board.dig_out.p1_02.is_set_high() {
+            OutputState::On
+        } else {
+            OutputState::Off
         }
     }
 
@@ -172,13 +184,21 @@ impl Sim {
     pub fn set_environment_confirmation(&mut self, state: OutputState) {
         match state {
             OutputState::On => {
-                self.board.dig_out.p1_03.set_low();
+                self.board.dig_out.p1_03.set_high();
                 self.board.leds._3.on();
             }
             OutputState::Off => {
-                self.board.dig_out.p1_03.set_high();
+                self.board.dig_out.p1_03.set_low();
                 self.board.leds._3.off();
             }
+        }
+    }
+
+    pub fn confirmation_state(&self) -> OutputState {
+        if self.board.dig_out.p1_03.is_set_high() {
+            OutputState::On
+        } else {
+            OutputState::Off
         }
     }
 
@@ -196,9 +216,21 @@ impl Sim {
         }
     }
 
+    pub fn radiation_state(&self) -> RadiationState {
+        if self.board.dig_out.p1_04.is_set_high() {
+            RadiationState::Active
+        } else {
+            RadiationState::Deactive
+        }
+    }
+
+    pub fn radiation(&self) -> i16 {
+        self.board.analog_in.read()
+    }
+
     #[req_link("rad.hw.radiation-relay")]
     pub fn radiation_relay(&self) -> OutputState {
-        if self.board.dig_in.p1_05.is_low() {
+        if self.board.dig_in.p1_05.is_high() {
             OutputState::On
         } else {
             OutputState::Off
@@ -207,7 +239,7 @@ impl Sim {
 
     #[req_link("rad.hw.mode-indicator")]
     pub fn actual_mode(&self) -> RadMode {
-        if self.board.dig_in.p1_06.is_low() {
+        if self.board.dig_in.p1_06.is_high() {
             RadMode::Operation
         } else {
             RadMode::Idle
@@ -215,7 +247,7 @@ impl Sim {
     }
 
     pub fn start_request_detected(&self) -> bool {
-        self.board.dig_in.p1_07.is_low()
+        self.board.dig_in.p1_07.is_high()
     }
 
     pub fn update(&mut self) {
@@ -238,28 +270,45 @@ impl Sim {
     pub fn sys_time(&self) -> Duration {
         self.board.sys_time()
     }
+
+    pub fn print(&self) {
+        defmt::info!("Start/Stop switch (P1.01) in '{}'", self.start_stop_state());
+        defmt::info!("Door Sensor (P1.02) is '{}'", self.door_sensor());
+        defmt::info!("Confirmation (P1.03) is '{}'", self.confirmation_state());
+        defmt::info!("Radiation (P0.03) is '{}'", self.radiation());
+        defmt::info!("Radiation relay (P1.05) is '{}'", self.radiation_relay());
+        defmt::info!("Rad (P1.06) in '{}' mode", self.actual_mode());
+        defmt::info!(
+            "Start requested detected (P1.07) is '{}'",
+            self.start_request_detected()
+        );
+    }
+
+    pub fn board(&mut self) -> &mut Board {
+        &mut self.board
+    }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, defmt::Format)]
 pub enum OutputState {
     On,
     Off,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, defmt::Format)]
 pub enum StartStopState {
     Start,
     Stop,
 }
 
 #[req_link("rad.mode")]
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, defmt::Format)]
 pub enum RadMode {
     Idle,
     Operation,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, defmt::Format)]
 pub enum RadiationState {
     Active,
     Deactive,

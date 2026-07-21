@@ -1,54 +1,54 @@
 #![no_main]
 #![no_std]
 
-use sim as _;
+use sim::{self as _, Sim};
 
 #[cortex_m_rt::entry]
 fn main() -> ! {
-    let mut board = nrf_hal::Board::init().unwrap();
+    let mut sim = Sim::init();
 
-    let mut last_printed = board.sys_time();
+    let mut last_printed = sim.sys_time();
 
     loop {
-        if board.buttons._1.switched_on() {
-            board.dig_out.p1_01.set_high();
-            board.leds._1.on();
+        if sim.board().buttons._1.switched_on() {
+            sim.set_start_stop(sim::StartStopState::Start);
+            sim.board().leds._1.on();
         } else {
-            board.dig_out.p1_01.set_low();
-            board.leds._1.off();
+            sim.set_start_stop(sim::StartStopState::Stop);
+            sim.board().leds._1.off();
         }
 
-        if board.buttons._2.switched_on() {
-            board.dig_out.p1_02.set_high();
-            board.leds._2.on();
+        if sim.board().buttons._2.switched_on() {
+            sim.set_door_sensor(sim::OutputState::On);
+            sim.board().leds._2.on();
         } else {
-            board.dig_out.p1_02.set_low();
-            board.leds._2.off();
+            sim.set_door_sensor(sim::OutputState::Off);
+            sim.board().leds._2.off();
         }
 
-        if board.buttons._3.switched_on() {
-            board.dig_out.p1_03.set_high();
-            board.leds._3.on();
+        if sim.board().buttons._3.switched_on() {
+            sim.set_environment_confirmation(sim::OutputState::On);
+            sim.board().leds._3.on();
         } else {
-            board.dig_out.p1_03.set_low();
-            board.leds._3.off();
+            sim.set_environment_confirmation(sim::OutputState::Off);
+            sim.board().leds._3.off();
         }
 
-        if board.buttons._4.switched_on() {
-            board.dig_out.p1_04.set_high();
-            board.leds._4.on();
+        if sim.board().buttons._4.switched_on() {
+            sim.set_radiation_state(sim::RadiationState::Active);
+            sim.board().leds._4.on();
         } else {
-            board.dig_out.p1_04.set_low();
-            board.leds._4.off();
+            sim.set_radiation_state(sim::RadiationState::Deactive);
+            sim.board().leds._4.off();
         }
 
-        let curr_time = board.sys_time();
-        if last_printed.abs_diff(curr_time).as_secs() > 2 {
+        let curr_time = sim.board().sys_time();
+        if last_printed.abs_diff(curr_time).as_secs() > 2 && sim.board().buttons._1.switched_on() {
             last_printed = curr_time;
 
-            board.print_io();
+            sim.print();
         }
 
-        board.update();
+        sim.update();
     }
 }
