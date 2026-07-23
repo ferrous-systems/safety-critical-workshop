@@ -163,18 +163,18 @@ impl Sim {
     pub fn set_start_stop(&mut self, state: StartStopState) {
         match state {
             StartStopState::Start => {
-                self.board.dig_out.p1_01.set_high();
+                self.board.dig_out.p1_01.set_low();
                 self.board.leds._1.on();
             }
             StartStopState::Stop => {
-                self.board.dig_out.p1_01.set_low();
+                self.board.dig_out.p1_01.set_high();
                 self.board.leds._1.off();
             }
         }
     }
 
     pub fn start_stop_state(&self) -> StartStopState {
-        if self.board.dig_out.p1_01.is_set_high() {
+        if self.board.dig_out.p1_01.is_set_low() {
             StartStopState::Start
         } else {
             StartStopState::Stop
@@ -185,18 +185,18 @@ impl Sim {
     pub fn set_door_sensor(&mut self, state: OutputState) {
         match state {
             OutputState::On => {
-                self.board.dig_out.p1_02.set_high();
+                self.board.dig_out.p1_02.set_low();
                 self.board.leds._2.on();
             }
             OutputState::Off => {
-                self.board.dig_out.p1_02.set_low();
+                self.board.dig_out.p1_02.set_high();
                 self.board.leds._2.off();
             }
         }
     }
 
     pub fn door_sensor(&self) -> OutputState {
-        if self.board.dig_out.p1_02.is_set_high() {
+        if self.board.dig_out.p1_02.is_set_low() {
             OutputState::On
         } else {
             OutputState::Off
@@ -207,18 +207,18 @@ impl Sim {
     pub fn set_environment_confirmation(&mut self, state: OutputState) {
         match state {
             OutputState::On => {
-                self.board.dig_out.p1_03.set_high();
+                self.board.dig_out.p1_03.set_low();
                 self.board.leds._3.on();
             }
             OutputState::Off => {
-                self.board.dig_out.p1_03.set_low();
+                self.board.dig_out.p1_03.set_high();
                 self.board.leds._3.off();
             }
         }
     }
 
     pub fn confirmation_state(&self) -> OutputState {
-        if self.board.dig_out.p1_03.is_set_high() {
+        if self.board.dig_out.p1_03.is_set_low() {
             OutputState::On
         } else {
             OutputState::Off
@@ -229,31 +229,27 @@ impl Sim {
     pub fn set_radiation_state(&mut self, state: RadiationState) {
         match state {
             RadiationState::Active => {
-                self.board.dig_out.p1_04.set_high();
+                self.board.dig_out.p1_04.set_low();
                 self.board.leds._4.on();
             }
             RadiationState::Deactive => {
-                self.board.dig_out.p1_04.set_low();
+                self.board.dig_out.p1_04.set_high();
                 self.board.leds._4.off();
             }
         }
     }
 
     pub fn radiation_state(&self) -> RadiationState {
-        if self.board.dig_out.p1_04.is_set_high() {
+        if self.board.dig_out.p1_04.is_set_low() {
             RadiationState::Active
         } else {
             RadiationState::Deactive
         }
     }
 
-    pub fn radiation(&self) -> i16 {
-        self.board.analog_in.read()
-    }
-
     #[req_link("rad.hw.radiation-relay")]
     pub fn radiation_relay(&self) -> OutputState {
-        if self.board.dig_in.p1_05.is_high() {
+        if self.board.dig_in.p1_05.is_low() {
             OutputState::On
         } else {
             OutputState::Off
@@ -262,7 +258,7 @@ impl Sim {
 
     #[req_link("rad.hw.mode-indicator")]
     pub fn actual_mode(&self) -> RadMode {
-        if self.board.dig_in.p1_06.is_high() {
+        if self.board.dig_in.p1_06.is_low() {
             RadMode::Operation
         } else {
             RadMode::Idle
@@ -270,7 +266,7 @@ impl Sim {
     }
 
     pub fn start_request_detected(&self) -> bool {
-        self.board.dig_in.p1_07.is_high()
+        self.board.dig_in.p1_07.is_low()
     }
 
     pub fn update(&mut self) {
@@ -298,15 +294,13 @@ impl Sim {
         defmt::info!("Start/Stop switch (P1.01) in '{}'", self.start_stop_state());
         defmt::info!("Door Sensor (P1.02) is '{}'", self.door_sensor());
         defmt::info!("Confirmation (P1.03) is '{}'", self.confirmation_state());
-        defmt::info!("Radiation (P0.03) is '{}'", self.radiation());
+        defmt::info!("Radiation (P1.04) is '{}'", self.radiation_state());
         defmt::info!("Radiation relay (P1.05) is '{}'", self.radiation_relay());
         defmt::info!("Rad (P1.06) in '{}' mode", self.actual_mode());
         defmt::info!(
             "Start requested detected (P1.07) is '{}'",
             self.start_request_detected()
         );
-
-        self.board.print_io();
     }
 
     pub fn board(&mut self) -> &mut Board {
