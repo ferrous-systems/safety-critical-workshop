@@ -102,6 +102,7 @@ impl<'d> AnalogInput<'d> {
 
         loop {
             if r.events_calibratedone().read() != 0 {
+                defmt::info!("SAADC calibration done");
                 r.events_calibratedone().write_value(0);
                 break;
             }
@@ -116,8 +117,10 @@ impl<'d> AnalogInput<'d> {
         // Reset and enable the start and end event
         r.events_end().write_value(0);
         r.intenset().write(|w| w.set_end(true));
-        r.events_started().write_value(0);
-        r.intenset().write(|w| w.set_started(true));
+        //r.intenset().write(|w| w.set_started(true));
+
+        r.events_done().write_value(0);
+        r.intenset().write(|w| w.set_done(true));
 
         r.intenset().write(|w| w.set_chlimitl(0, true));
         r.intenset().write(|w| w.set_chlimith(0, true));
@@ -127,6 +130,9 @@ impl<'d> AnalogInput<'d> {
         atomic::compiler_fence(Ordering::SeqCst);
 
         r.tasks_start().write_value(1);
+        // triggered once to start continuous sampling.
+        // See 6.23.2.2 in spec
+        r.tasks_sample().write_value(1);
 
         Self {
             _p: saadc,
@@ -142,6 +148,9 @@ impl<'d> AnalogInput<'d> {
     }
 
     fn update(&mut self, current_time_us: u64) {
+        // let r = Self::regs();
+        // r.tasks_sample().write_value(1);
+
         if current_time_us.wrapping_sub(self.last_change_time_us) >= self.debounce_delay_us {
             self.val = Self::read_reg(self);
         }
@@ -184,8 +193,8 @@ impl typelevel::Handler<typelevel::SAADC> for SaadcInterruptHandler {
         }
 
         if r.events_started().read() != 0 {
-            defmt::info!("SAADC started");
-            r.intenclr().write(|w| w.set_started(true));
+            //defmt::info!("SAADC started");
+            //r.intenclr().write(|w| w.set_started(true));
         }
 
         if r.events_ch(0).limitl().read().limitl() {
@@ -196,6 +205,11 @@ impl typelevel::Handler<typelevel::SAADC> for SaadcInterruptHandler {
         if r.events_ch(0).limith().read().limith() {
             defmt::info!("SAADC input above limit");
             r.intenclr().write(|w| w.set_chlimith(0, true));
+        }
+
+        if r.events_done().read() == 1 {
+            defmt::info!("Sample taken");
+            r.intenclr().write(|w| w.set_done(true));
         }
     }
 }

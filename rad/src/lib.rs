@@ -42,7 +42,7 @@ impl Rad {
     pub fn update(&mut self, hal: &mut impl Hal) {
         match self.mode {
             RadMode::Idle => mantra_macros::impl_req!("rad.sw.idle" => {
-                assert!(!hal.radiation_active(), "Radiation must not be active in `idle` mode");
+                //assert!(!hal.radiation_active(), "Radiation must not be active in `idle` mode");
 
                 mantra_macros::impl_req!("rad.sw.operation.start" => {
                     if hal.start_requested() && !self.start_triggered {

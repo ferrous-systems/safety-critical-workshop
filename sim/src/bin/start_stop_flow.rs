@@ -16,6 +16,7 @@ fn main() -> ! {
         } else if start_time.abs_diff(sim.sys_time()).as_secs() > 5 {
             panic!("RAD not in 'idle' after startup delay");
         }
+        sim.update();
     }
 
     defmt::info!("Starting RAD operation");

@@ -30,6 +30,8 @@ defmt::timestamp!("{=u64:tus}", nrf_hal::uptime_us());
 
 pub const UPDATE_DELAY_MS: u64 = 50;
 
+const MAX_WAIT_TIME_SEC: u64 = 5;
+
 pub struct Sim {
     board: Board,
     expected_mode: RadMode,
@@ -72,7 +74,6 @@ impl Sim {
         self.set_environment_confirmation(OutputState::On);
         self.set_start_stop(StartStopState::Start);
 
-        const MAX_WAIT_TIME_SEC: u64 = 5;
         let sys_time = self.sys_time();
         self.expected_mode = RadMode::Operation;
 
@@ -82,6 +83,19 @@ impl Sim {
             } else if sys_time.abs_diff(self.sys_time()).as_secs() > MAX_WAIT_TIME_SEC {
                 panic!("RAD did not detect start request after ~{MAX_WAIT_TIME_SEC}s");
             }
+
+            self.update();
+        }
+
+        let sys_time = self.sys_time();
+        loop {
+            if self.radiation_relay() == OutputState::On {
+                break;
+            } else if sys_time.abs_diff(self.sys_time()).as_secs() > MAX_WAIT_TIME_SEC {
+                panic!("RAD did not activate radiation relay after ~{MAX_WAIT_TIME_SEC}s");
+            }
+
+            self.update();
         }
 
         assert_eq!(
@@ -121,12 +135,21 @@ impl Sim {
 
         self.wait_update();
 
-        // RAD should have turned of radiation with requested stop
-        if self.radiation_relay() == OutputState::Off {
-            self.set_radiation_state(RadiationState::Deactive);
-        }
+        let sys_time = self.sys_time();
+        loop {
+            // RAD should have turned of radiation with requested stop
+            if self.radiation_relay() == OutputState::Off {
+                self.set_radiation_state(RadiationState::Deactive);
+            }
 
-        self.wait_update();
+            if self.actual_mode() == RadMode::Idle {
+                break;
+            } else if sys_time.abs_diff(self.sys_time()).as_secs() > MAX_WAIT_TIME_SEC {
+                panic!("RAD did go back to 'idle' after ~{MAX_WAIT_TIME_SEC}s");
+            }
+
+            self.update();
+        }
 
         self.expected_mode = RadMode::Idle;
         assert_eq!(
