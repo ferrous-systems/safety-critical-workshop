@@ -57,7 +57,7 @@ impl<'d> AnalogInput<'d> {
         let r = hal::pac::SAADC;
         r.enable().write(|w| w.set_enable(true));
 
-        let oversample = hal::pac::saadc::vals::Oversample::Over2x;
+        let oversample = hal::pac::saadc::vals::Oversample::Over4x;
         // spec p. 678 f_sample < 1 / (t_acq + t_conv) and p. 713 f_sample = 16 MHz / <CC value> with CC in 80..2047
         // t_conv < 2µs see electrical spec table on p. 714
         // 16 MHz / 124 = ~120_000 < 1 / (3µs + 2µs) = ~200_000
@@ -67,7 +67,7 @@ impl<'d> AnalogInput<'d> {
         r.samplerate().write_value(samplerate);
 
         r.resolution()
-            .write(|w| w.set_val(hal::pac::saadc::vals::Val::_12bit));
+            .write(|w| w.set_val(hal::pac::saadc::vals::Val::_14bit));
         r.oversample().write(|w| w.set_oversample(oversample));
 
         // Configure channel for p0.03
@@ -76,7 +76,7 @@ impl<'d> AnalogInput<'d> {
         });
         r.ch(0).config().write(|w| {
             w.set_refsel(hal::pac::saadc::vals::Refsel::Vdd14);
-            w.set_gain(hal::pac::saadc::vals::Gain::Gain1);
+            w.set_gain(hal::pac::saadc::vals::Gain::Gain14);
             w.set_tacq(hal::pac::saadc::vals::Tacq::_3us);
             w.set_mode(hal::pac::saadc::vals::ConfigMode::Se);
             w.set_resp(hal::pac::saadc::vals::Resp::Pullup);
@@ -122,8 +122,8 @@ impl<'d> AnalogInput<'d> {
         r.events_done().write_value(0);
         r.intenset().write(|w| w.set_done(true));
 
-        r.intenset().write(|w| w.set_chlimitl(0, true));
-        r.intenset().write(|w| w.set_chlimith(0, true));
+        // r.intenset().write(|w| w.set_chlimitl(0, true));
+        // r.intenset().write(|w| w.set_chlimith(0, true));
 
         // Don't reorder the ADC start event before the previous writes. Hopefully self
         // wouldn't happen anyway.
@@ -136,7 +136,7 @@ impl<'d> AnalogInput<'d> {
 
         Self {
             _p: saadc,
-            debounce_delay_us: 10_000,
+            debounce_delay_us: 1_000_000,
             last_change_time_us: uptime_us(),
             val: 0, //Self::read_reg(),
             buf,
@@ -152,6 +152,7 @@ impl<'d> AnalogInput<'d> {
         // r.tasks_sample().write_value(1);
 
         if current_time_us.wrapping_sub(self.last_change_time_us) >= self.debounce_delay_us {
+            self.last_change_time_us = current_time_us;
             self.val = Self::read_reg(self);
         }
     }
@@ -161,12 +162,12 @@ impl<'d> AnalogInput<'d> {
     }
 
     fn read_reg(&self) -> i16 {
-        // defmt::println!("Buffer: {}", defmt::Debug2Format(self.buf));
+        defmt::println!("Buffer: {}", defmt::Debug2Format(self.buf));
         self.buf.0[0]
     }
 }
 
-const SAADC_BUFFER_SIZE: usize = 1;
+const SAADC_BUFFER_SIZE: usize = 32;
 #[repr(C, align(4))]
 #[derive(Debug, Copy, Clone)]
 struct SaadcBuffer([i16; SAADC_BUFFER_SIZE]);
@@ -188,28 +189,38 @@ impl typelevel::Handler<typelevel::SAADC> for SaadcInterruptHandler {
         }
 
         if r.events_end().read() != 0 {
-            defmt::info!("SAADC buffer filled");
-            r.intenclr().write(|w| w.set_end(true));
+            //defmt::warn!("SAADC buffer filled");
+            //r.intenclr().write(|w| w.set_end(true));
+            r.events_end().write_value(0);
+            //r.intenset().write(|w| w.set_end(true));
+
+            atomic::compiler_fence(Ordering::SeqCst);
+
+            r.tasks_start().write_value(1);
         }
 
         if r.events_started().read() != 0 {
-            //defmt::info!("SAADC started");
+            //defmt::warn!("SAADC started");
             //r.intenclr().write(|w| w.set_started(true));
+            r.events_started().write_value(0);
+            //r.intenset().write(|w| w.set_started(true));
         }
 
-        if r.events_ch(0).limitl().read().limitl() {
-            defmt::info!("SAADC input below limit");
-            r.intenclr().write(|w| w.set_chlimitl(0, true));
-        }
+        // if r.events_ch(0).limitl().read().limitl() {
+        //     defmt::warn!("SAADC input below limit");
+        //     r.events_end().write_value(0);
+        //     r.intenset().write(|w| w.set_chlimitl(0, true));
+        // }
 
-        if r.events_ch(0).limith().read().limith() {
-            defmt::info!("SAADC input above limit");
-            r.intenclr().write(|w| w.set_chlimith(0, true));
-        }
+        // if r.events_ch(0).limith().read().limith() {
+        //     defmt::warn!("SAADC input above limit");
+        //     r.intenset().write(|w| w.set_chlimith(0, true));
+        // }
 
         if r.events_done().read() == 1 {
-            defmt::info!("Sample taken");
-            r.intenclr().write(|w| w.set_done(true));
+            //r.intenclr().write(|w| w.set_done(true));
+            r.events_done().write_value(0);
+            //r.intenset().write(|w| w.set_done(true));
         }
     }
 }
@@ -712,12 +723,12 @@ impl Board {
     }
 
     pub fn print_io(&self) {
-        defmt::info!("Out p1.01 is '{}'", &self.dig_out.p1_01.get_output_level());
+        defmt::warn!("Out p1.01 is '{}'", &self.dig_out.p1_01.get_output_level());
         defmt::info!("Out p1.02 is '{}'", &self.dig_out.p1_02.get_output_level());
         defmt::info!("Out p1.03 is '{}'", &self.dig_out.p1_03.get_output_level());
         defmt::info!("Out p1.04 is '{}'", &self.dig_out.p1_04.get_output_level());
 
-        defmt::info!("Inp p1.05 is '{}'", &self.dig_in.p1_05.get_level());
+        defmt::warn!("Inp p1.05 is '{}'", &self.dig_in.p1_05.get_level());
         defmt::info!("Inp p1.06 is '{}'", &self.dig_in.p1_06.get_level());
         defmt::info!("Inp p1.07 is '{}'", &self.dig_in.p1_07.get_level());
         defmt::info!("Inp p1.08 is '{}'", &self.dig_in.p1_08.get_level());
@@ -727,7 +738,7 @@ impl Board {
         defmt::info!("LED3 is '{}'", &self.leds._3);
         defmt::info!("LED4 is '{}'", &self.leds._4);
 
-        defmt::info!("Analog input p0.03 '{}'", self.analog_in.read());
+        defmt::warn!("Analog input p0.03 '{}'", self.analog_in.read());
     }
 }
 

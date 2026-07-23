@@ -43,7 +43,7 @@ fn main() -> ! {
         }
 
         let curr_time = sim.board().sys_time();
-        if last_printed.abs_diff(curr_time).as_secs() > 2 && sim.board().buttons._1.switched_on() {
+        if last_printed.abs_diff(curr_time).as_secs() > 2 {
             last_printed = curr_time;
 
             sim.print();

@@ -5,7 +5,7 @@ mantra:
 
 [working-directory("sim")]
 sim-manual:
-    DEFMT_LOG=info cargo run --bin manual
+    DEFMT_LOG=warn cargo run --bin manual
 
 [working-directory("sim")]
 sim-start-stop:

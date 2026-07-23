@@ -305,6 +305,8 @@ impl Sim {
             "Start requested detected (P1.07) is '{}'",
             self.start_request_detected()
         );
+
+        self.board.print_io();
     }
 
     pub fn board(&mut self) -> &mut Board {
