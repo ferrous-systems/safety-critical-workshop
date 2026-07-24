@@ -57,14 +57,14 @@ impl Sim {
     }
 
     /// Execute `f` and then [`Self::update`] in a loop until `f` returns [`ControlFlow::Break`].
-    pub fn update_loop<F>(&mut self, f: F)
+    pub fn update_loop<F, B>(&mut self, mut f: F) -> B
     where
-        F: Fn(&mut Self) -> ControlFlow<()>,
+        F: FnMut(&mut Self) -> ControlFlow<B>,
     {
         loop {
             match f(self) {
                 ControlFlow::Continue(_) => self.update(),
-                ControlFlow::Break(b) => break,
+                ControlFlow::Break(b) => break b,
             }
         }
     }

@@ -1,6 +1,8 @@
 #![no_main]
 #![no_std]
 
+use core::ops::ControlFlow;
+
 use sim::{self as _, Sim};
 
 #[cortex_m_rt::entry]
@@ -9,7 +11,7 @@ fn main() -> ! {
 
     let mut last_printed = sim.sys_time();
 
-    loop {
+    sim.update_loop(|sim| {
         if sim.board().buttons._1.switched_on() {
             sim.set_start_stop(sim::StartStopState::Start);
             sim.board().leds._1.on();
@@ -49,6 +51,6 @@ fn main() -> ! {
             sim.print();
         }
 
-        sim.update();
-    }
+        ControlFlow::Continue(())
+    })
 }
