@@ -16,4 +16,4 @@ mockall_double = "0.3.1"
 [features]
 default = ["hw", "hw-testing"]
 hw = ["nrf-hal", "defmt"]
-hw-testing = ["hw"]
+hw-testing = ["hw", "mantra-macros/defmt"]

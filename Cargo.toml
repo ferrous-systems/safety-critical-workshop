@@ -1,10 +1,10 @@
 [workspace]
 resolver = "3"
-members = ["nrf-hal","rad", "sim"]
+members = ["nrf-hal","rad", "sim", "system-tests"]
 
 [workspace.dependencies]
 anyhow = "1"
 cortex-m = {version = "0.7.7", features = ["critical-section-single-core"]}
 cortex-m-rt = "0.7.5"
-defmt = "1"
-mantra-macros = { git = "https://github.com/mhatzl/mantra", branch = "mh/no-std-macros" }
+defmt = "1.1.0"
+mantra-macros = { git="https://github.com/mhatzl/mantra", branch = "mh/defmt-macro-logs" }

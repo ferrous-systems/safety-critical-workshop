@@ -12,6 +12,10 @@ sim-start-stop:
     DEFMT_LOG=info cargo run --bin start_stop_flow
 
 [working-directory("sim")]
+sim-build-start-stop:
+    DEFMT_LOG=info cargo build --bin start_stop_flow
+
+[working-directory("sim")]
 sim-reset:
     DEFMT_LOG=info cargo run --bin reset
 
@@ -20,5 +24,17 @@ rad-run:
     DEFMT_LOG=info cargo run --bin rad
 
 [working-directory("rad")]
+rad-build features='hw':
+    DEFMT_LOG=info cargo build --bin rad --features={{ features }}
+
+[working-directory("rad")]
 rad-unit-tests:
     cargo test --lib --target=host-tuple --no-default-features
+
+export EMBSINTH_OUT_DIR := justfile_directory() + "/target"
+
+[working-directory("system-tests")]
+rad-system-tests:
+    just rad-build hw-testing
+    just sim-build-start-stop
+    RUST_LOG=info cargo test --target=host-tuple 

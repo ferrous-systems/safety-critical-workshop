@@ -63,16 +63,21 @@ impl Sim {
     pub fn rad_to_production(&mut self) {
         self.update(); // ensure we read the latest input state
 
-        assert_eq!(
-            self.expected_mode,
-            RadMode::Idle,
-            "RAD may only be changed to 'operation' if it is expected to be in 'idle'"
-        );
-        assert_eq!(self.actual_mode(), RadMode::Idle, "RAD was not in 'idle'");
+        mantra_macros::link_req!("rad.sw.operation.pre-condition" => {
+            assert_eq!(
+                self.expected_mode,
+                RadMode::Idle,
+                "RAD may only be changed to 'operation' if it is expected to be in 'idle'"
+            );
+            assert_eq!(self.actual_mode(), RadMode::Idle, "RAD was not in 'idle'");
 
-        self.set_door_sensor(OutputState::On);
-        self.set_environment_confirmation(OutputState::On);
-        self.set_start_stop(StartStopState::Start);
+            self.set_door_sensor(OutputState::On);
+            self.set_environment_confirmation(OutputState::On);
+        });
+
+        mantra_macros::link_req!("rad.sw.operation.start" => {
+            self.set_start_stop(StartStopState::Start);
+        });
 
         let sys_time = self.sys_time();
         self.expected_mode = RadMode::Operation;

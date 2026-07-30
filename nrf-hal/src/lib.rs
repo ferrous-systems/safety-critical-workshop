@@ -404,9 +404,9 @@ impl Board {
         // do this *after* clock set-up to avoid start-up issues
 
         // TODO: use feature flag to toggle code below
-        // while !defmt_rtt::in_blocking_mode() {
-        //     core::hint::spin_loop();
-        // }
+        while !defmt_rtt::in_blocking_mode() {
+            core::hint::spin_loop();
+        }
 
         // NOTE: this branch runs at most once
 
