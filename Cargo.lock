@@ -825,7 +825,7 @@ dependencies = [
 [[package]]
 name = "embsinth"
 version = "0.1.0"
-source = "git+https://github.com/mhatzl/embsinth#776686af82cbad7f31614cb01af079ae1f188c32"
+source = "git+https://github.com/mhatzl/embsinth#148d9adb9933d0b6fd26d80a6b257167215053f3"
 dependencies = [
  "anyhow",
  "defmt-decoder",
@@ -846,7 +846,7 @@ dependencies = [
 [[package]]
 name = "embsinth-procm"
 version = "0.1.0"
-source = "git+https://github.com/mhatzl/embsinth#776686af82cbad7f31614cb01af079ae1f188c32"
+source = "git+https://github.com/mhatzl/embsinth#148d9adb9933d0b6fd26d80a6b257167215053f3"
 dependencies = [
  "proc-macro2",
  "quote",
