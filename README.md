@@ -6,6 +6,13 @@ This repository contains the accompanying demo for the "Safety-Critical Rust Dev
 
 - `cargo install mantra --locked`
 - `cargo install nextest --locked`
+- Docker installed and usable
+
+## Building the docker container
+
+- `docker buildx create --name multiarch-builder --use`
+- `docker buildx inspect --bootstrap`
+- For building locally: `docker buildx build --load -t ubuntu-qemu-arm .`
 
 ## Hardware Mapping
 
