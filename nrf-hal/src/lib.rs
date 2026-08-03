@@ -46,14 +46,14 @@ pub struct AnalogInput<'d> {
     debounce_delay_us: u64,
     last_change_time_us: u64,
     val: i16,
-    buf: &'static mut SaadcBuffer,
+    // buf: &'static mut SaadcBuffer,
 }
 
 // Code adapted from: https://github.com/embassy-rs/embassy/blob/main/embassy-nrf/src/saadc.rs
 impl<'d> AnalogInput<'d> {
     pub fn new(saadc: Peri<'d, hal::peripherals::SAADC>) -> Self {
-        let buf = cortex_m::singleton!(: SaadcBuffer = SaadcBuffer([0; SAADC_BUFFER_SIZE]))
-            .expect("Only one AnalogInput supported");
+        // let buf = cortex_m::singleton!(: SaadcBuffer = SaadcBuffer([0; SAADC_BUFFER_SIZE]))
+        //     .expect("Only one AnalogInput supported");
         let r = hal::pac::SAADC;
         r.enable().write(|w| w.set_enable(true));
 
@@ -61,10 +61,10 @@ impl<'d> AnalogInput<'d> {
         // spec p. 678 f_sample < 1 / (t_acq + t_conv) and p. 713 f_sample = 16 MHz / <CC value> with CC in 80..2047
         // t_conv < 2µs see electrical spec table on p. 714
         // 16 MHz / 124 = ~120_000 < 1 / (3µs + 2µs) = ~200_000
-        let mut samplerate = Samplerate::default();
-        samplerate.set_mode(SamplerateMode::Timers);
-        samplerate.set_cc(124);
-        r.samplerate().write_value(samplerate);
+        // let mut samplerate = Samplerate::default();
+        // samplerate.set_mode(SamplerateMode::Timers);
+        // samplerate.set_cc(124);
+        // r.samplerate().write_value(samplerate);
 
         r.resolution()
             .write(|w| w.set_val(hal::pac::saadc::vals::Val::_14bit));
@@ -72,14 +72,14 @@ impl<'d> AnalogInput<'d> {
 
         // Configure channel for p0.03
         r.ch(0).pselp().write(|w| {
-            w.set_pselp(hal::pac::saadc::vals::Psel::AnalogInput0);
+            w.set_pselp(hal::pac::saadc::vals::Psel::AnalogInput1);
         });
         r.ch(0).config().write(|w| {
-            w.set_refsel(hal::pac::saadc::vals::Refsel::Vdd14);
-            w.set_gain(hal::pac::saadc::vals::Gain::Gain14);
-            w.set_tacq(hal::pac::saadc::vals::Tacq::_3us);
+            w.set_refsel(hal::pac::saadc::vals::Refsel::Internal);
+            w.set_gain(hal::pac::saadc::vals::Gain::Gain16);
+            w.set_tacq(hal::pac::saadc::vals::Tacq::_10us);
             w.set_mode(hal::pac::saadc::vals::ConfigMode::Se);
-            w.set_resp(hal::pac::saadc::vals::Resp::Pullup);
+            w.set_resp(hal::pac::saadc::vals::Resp::Bypass);
             w.set_resn(hal::pac::saadc::vals::Resn::Bypass);
             w.set_burst(!matches!(
                 oversample,
@@ -90,12 +90,12 @@ impl<'d> AnalogInput<'d> {
         // Disable all events interrupts
         r.intenclr().write(|w| w.0 = 0x003F_FFFF);
 
-        interrupt::SAADC.unpend();
-        unsafe { interrupt::SAADC.enable() };
+        // interrupt::SAADC.unpend();
+        // unsafe { interrupt::SAADC.enable() };
 
         // calibrate
         r.events_calibratedone().write_value(0);
-        r.intenset().write(|w| w.set_calibratedone(true));
+        // r.intenset().write(|w| w.set_calibratedone(true));
         // Order is important
         atomic::compiler_fence(Ordering::SeqCst);
         r.tasks_calibrateoffset().write_value(1);
@@ -108,43 +108,56 @@ impl<'d> AnalogInput<'d> {
             }
         }
 
-        // Set up the DMA
-        r.result().ptr().write_value(buf.0.as_mut_ptr() as u32);
-        r.result()
-            .maxcnt()
-            .write(|w| w.set_maxcnt(buf.0.len() as _));
+        // // Set up the DMA
+        // r.result().ptr().write_value(buf.0.as_mut_ptr() as u32);
+        // r.result()
+        //     .maxcnt()
+        //     .write(|w| w.set_maxcnt(buf.0.len() as _));
 
         // Reset and enable the start and end event
         r.events_end().write_value(0);
-        r.intenset().write(|w| w.set_end(true));
+        // r.intenset().write(|w| w.set_end(true));
         //r.intenset().write(|w| w.set_started(true));
 
         r.events_done().write_value(0);
-        r.intenset().write(|w| w.set_done(true));
+        // r.intenset().write(|w| w.set_done(true));
 
         // r.intenset().write(|w| w.set_chlimitl(0, true));
         // r.intenset().write(|w| w.set_chlimith(0, true));
 
         // Don't reorder the ADC start event before the previous writes. Hopefully self
         // wouldn't happen anyway.
-        atomic::compiler_fence(Ordering::SeqCst);
+        // atomic::compiler_fence(Ordering::SeqCst);
 
-        r.tasks_start().write_value(1);
+        // r.tasks_start().write_value(1);
         // triggered once to start continuous sampling.
         // See 6.23.2.2 in spec
-        r.tasks_sample().write_value(1);
+        // r.tasks_sample().write_value(1);
 
         Self {
             _p: saadc,
             debounce_delay_us: 1_000_000,
             last_change_time_us: uptime_us(),
             val: 0, //Self::read_reg(),
-            buf,
+                    // buf,
         }
     }
 
-    pub fn read(&self) -> i16 {
-        self.val
+    fn read_reg<const N: usize>(&self, buf: &mut [i16; N]) {
+        // self.val
+        let r = Self::regs();
+
+        r.result().ptr().write_value(buf.as_mut_ptr() as u32);
+        r.result().maxcnt().write(|w| w.set_maxcnt(buf.len() as _));
+
+        atomic::compiler_fence(Ordering::SeqCst);
+        r.tasks_start().write_value(1);
+        // triggered once to start continuous sampling.
+        // See 6.23.2.2 in spec
+        r.tasks_sample().write_value(1);
+
+        while r.events_end().read() != 1 {}
+        r.events_end().write_value(0);
     }
 
     fn update(&mut self, current_time_us: u64) {
@@ -153,7 +166,9 @@ impl<'d> AnalogInput<'d> {
 
         if current_time_us.wrapping_sub(self.last_change_time_us) >= self.debounce_delay_us {
             self.last_change_time_us = current_time_us;
-            self.val = Self::read_reg(self);
+            let mut buf = [0; 1];
+            self.read_reg(&mut buf);
+            self.val = buf[0];
         }
     }
 
@@ -161,9 +176,10 @@ impl<'d> AnalogInput<'d> {
         hal::pac::SAADC
     }
 
-    fn read_reg(&self) -> i16 {
-        defmt::println!("Buffer: {}", defmt::Debug2Format(self.buf));
-        self.buf.0[0]
+    pub fn read(&self) -> i16 {
+        // defmt::println!("Buffer: {}", defmt::Debug2Format(self.buf));
+        // self.buf.0[0]
+        self.val
     }
 }
 
@@ -738,7 +754,7 @@ impl Board {
         defmt::info!("LED3 is '{}'", &self.leds._3);
         defmt::info!("LED4 is '{}'", &self.leds._4);
 
-        defmt::warn!("Analog input p0.03 '{}'", self.analog_in.read());
+        defmt::warn!("Analog input p0.03 '{}'", &self.analog_in.val);
     }
 }
 
