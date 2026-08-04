@@ -5,7 +5,7 @@ edition = "2021"
 
 [dependencies]
 nrf-hal = { path = "../nrf-hal", optional = true }
-cortex-m-rt.workspace = true
+cortex-m-rt = { workspace = true, optional = true }
 defmt = { workspace = true, optional = true }
 mantra-macros.workspace = true
 
@@ -15,5 +15,5 @@ mockall_double = "0.3.1"
 
 [features]
 default = ["hw", "hw-testing"]
-hw = ["nrf-hal", "defmt"]
+hw = ["nrf-hal", "defmt", "dep:cortex-m-rt"]
 hw-testing = ["hw", "mantra-macros/defmt"]
