@@ -8,3 +8,4 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # Default command to verify installation
 CMD ["qemu-arm", "-version"]
+ENTRYPOINT [ "/usr/bin/qemu-arm-static" ]
