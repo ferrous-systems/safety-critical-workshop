@@ -35,6 +35,11 @@ export EMBSINTH_OUT_DIR := justfile_directory() + "/target"
 
 [working-directory("system-tests")]
 rad-system-tests:
+    rm -rf $EMBSINTH_OUT_DIR/system-tests
     just rad-build hw-testing
     just sim-build-start-stop
     RUST_LOG=info cargo test --target=host-tuple 
+    just post-process
+
+post-process tests='system-tests':
+    embsinth post-process --out $EMBSINTH_OUT_DIR/{{ tests }}/mantra_test_run.json --test-run-name {{ tests }} $EMBSINTH_OUT_DIR/

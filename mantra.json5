@@ -27,6 +27,13 @@
                     source: "content",
                     pattern: "*.rs"
                 }
+            ],
+            test_runs: [
+                {
+                    path: "target/system-tests",
+                    source: "schema",
+                    pattern: "*.json"
+                }
             ]
         }
     ]
