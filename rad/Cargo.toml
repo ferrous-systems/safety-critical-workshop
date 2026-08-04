@@ -14,7 +14,7 @@ mockall = "0.15.0"
 mockall_double = "0.3.1"
 
 [features]
-hw = ["nrf-hal", "defmt"]
+hw = ["nrf-hal", "defmt", "dep:cortex-m-rt"]
 hw-testing = ["hw"]
 hw-auto-testing = ["hw-testing", "mantra-macros/defmt"]
 phase-one = []
