@@ -1,23 +1,26 @@
 #![no_main]
 #![no_std]
 
-use core::time::Duration;
-
 use cortex_m_rt::exception;
+use mantra_macros::satisfy_req;
 
 #[cortex_m_rt::entry]
 fn main() -> ! {
-    let mut board = nrf_hal::Board::init().unwrap();
+    let mut board = satisfy_req!("rad.sw.hal" => nrf_hal::Board::init().unwrap());
     let mut rad = rad::Rad::init();
 
-    board.print_io();
+    //board.print_io();
+
+    let mut last_print_time = board.sys_time();
 
     loop {
         board.update();
         rad.update(&mut board);
 
-        board.print_io();
-        board.timer.wait(Duration::from_millis(2000));
+        if last_print_time.abs_diff(board.sys_time()).as_secs() > 1 {
+            last_print_time = board.sys_time();
+            board.print_io();
+        }
     }
 }
 

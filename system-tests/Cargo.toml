@@ -1,0 +1,9 @@
+[package]
+name = "system-tests"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+mantra-macros = { workspace = true, features = ["log"] }
+embsinth = { git = "https://github.com/mhatzl/embsinth" }
+log = "0.4.33"

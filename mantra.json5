@@ -27,6 +27,26 @@
                     source: "content",
                     pattern: "*.rs"
                 }
+            ],
+            test_runs: [
+                {
+                    path: "target/system-tests",
+                    source: "schema",
+                    pattern: "*.json"
+                },
+                {
+                    path: "target/nextest/default",
+                    source: {
+                        test: {
+                            format: "junit",
+                            pattern: "*junit.xml",
+                        },
+                        coverage: {
+                            format: "cobertura_loose",
+                            pattern: "*cobertura.xml",
+                        }
+                    }
+                }
             ]
         }
     ]
