@@ -21,6 +21,7 @@ To prevent this, the *RAD* must be designed and built to prevent wrongful usage 
 ## `risk.wrong-cell`: Wrong cells targeted
 
 - **Parents:** ["goal.kill-cancer"]
+- **Manual Verification:** true
 
 If the *RAD* targets healthy cells instead of malignant once, patient health is reduced while malignat cells may continue to grow.
 This significantly increases the likelihood of death for a patient.

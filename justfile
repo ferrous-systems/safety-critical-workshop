@@ -10,7 +10,7 @@ base:
 
 [working-directory("sim")]
 sim-manual:
-    DEFMT_LOG=info cargo run --bin manual
+    DEFMT_LOG=info cargo run --bin manual --no-default-features
 
 [working-directory("sim")]
 sim-start-stop:
@@ -26,7 +26,7 @@ sim-reset:
 
 [working-directory("rad")]
 rad-run:
-    DEFMT_LOG=info cargo run --bin rad
+    DEFMT_LOG=info cargo run --bin rad --features=hw-testing
 
 [working-directory("rad")]
 rad-build features='hw':
@@ -45,7 +45,7 @@ export EMBSINTH_OUT_DIR := justfile_directory() + "/target"
 [working-directory("system-tests")]
 rad-system-tests:
     rm -rf $EMBSINTH_OUT_DIR/system-tests
-    just rad-build hw-testing
+    just rad-build hw-auto-testing
     just sim-build-start-stop
     RUST_LOG=info cargo test --target=host-tuple 
     just post-process

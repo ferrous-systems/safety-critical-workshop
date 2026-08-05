@@ -38,7 +38,7 @@ so personal can better observe the state of *RAD*.
 - **Manual Verification:** true
 
 This requirement groups all hardware requirements.
-Manual verification is propagated to all sub-requirements, since hardware requirements cannot easily be automatically tested.
+Manual verification enforces that a review is needed for this requirement to be verified.
 
 ### `rad.hw.mode-indicator`: Indicate mode of *RAD*
 
@@ -100,7 +100,7 @@ A LED will be used to indicate if radiation output is on (LED is ON) or off (LED
 
 - **Parents:** ["radiation.measure"]
 
-An analog sensor is used to measure the radiation output.
+A digital input is used to detect if radiation is output.
 
 ### `rad.hw.mcu`: *RAD* microcontroller
 
@@ -115,6 +115,7 @@ An analog sensor is used to measure the radiation output.
     "rad.hw.radiation-relay",
     "rad.hw.radiation-relay.status-LED"
     ]
+- **Manual Verification:** true
 
 The chosen microcontroller for *RAD* must support the number of inputs and outputs required by all requirements listed under [req_link("rad.hw")].
 
@@ -122,15 +123,13 @@ The chosen microcontroller for *RAD* must support the number of inputs and outpu
 - Start/Stop switch ... [req_link("rad.hw.start-stop-switch")]
 - Door sensor ... [req_link("rad.hw.door-sensor")]
 - Confirmation key switch ... [req_link("rad.hw.confirmation-switch")]
-
-**Analog Inputs:**
 - Radiation sensor ... [req_link("rad.hw.radiation-sensor")]
 
 **Digital Outputs:**
 - *RAD* operation mode LED ... [req_link("rad.hw.mode-indicator")]
 - Door sensor state LED ... [req_link("rad.hw.door-sensor.status-LED")]
 - Confirmation switch state LED ... [req_link("rad.hw.confirmation-switch.status-LED")]
-- Radiation relay (ideally PWM) ... [req_link("rad.hw.radiation-relay")]
+- Radiation relay ... [req_link("rad.hw.radiation-relay")]
 - Radiation relay state LED ... [req_link("rad.hw.radiation-relay.status-LED")]
 
 The demo is built for the [nRF52840 DK](https://www.nordicsemi.com/Products/Development-hardware/nrf52840-dk), but other microcontrollers may also fit.
@@ -141,18 +140,7 @@ This requirement groups all software requirements.
 
 ### `rad.sw.hal`: Hardware Abstraction Layer (HAL)
 
-- **Parents:** [
-    "rad.hw.mcu",
-    "rad.hw.mode-indicator",
-    "rad.hw.start-stop-switch",
-    "rad.hw.door-sensor",
-    "rad.hw.confirmation-switch",
-    "rad.hw.radiation-sensor",
-    "rad.hw.door-sensor.status-LED",
-    "rad.hw.confirmation-switch.status-LED",
-    "rad.hw.radiation-relay",
-    "rad.hw.radiation-relay.status-LED"
-    ]
+- **Parents:** ["rad.hw.mcu"]
 
 The HAL must interact with the chosen microcontroller and I/O to control *RAD*.
 

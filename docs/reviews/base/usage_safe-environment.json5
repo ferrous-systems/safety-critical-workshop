@@ -1,0 +1,29 @@
+{
+    reviews: [
+        {
+            name: "Safe Environment",
+            utc_date: "2026-08-05T17:00utc-01",
+            authors: [
+                "Manuel"
+            ],
+            revisions: [
+                {
+                    nr: 1,
+                    authors: [
+                        "Manuel"
+                    ],
+                    comment: "Initial review"
+                }
+            ],
+            requirements: [
+                {
+                    id: "usage.safe-environment.restrict-access",
+                    comment: "\
+                    The RAD is enclosed in a restricted area that is only accessible through an entrance door.\
+                    This door is ensured to be closed by the door-sensor and explicit environment confirmation.\
+                    "
+                }
+            ],
+        }
+    ]
+}
