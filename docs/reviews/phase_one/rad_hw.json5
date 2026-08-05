@@ -1,0 +1,39 @@
+{
+    reviews: [
+        {
+            name: "RAD HW",
+            utc_date: "2026-08-05T17:00utc-01",
+            authors: [
+                "Manuel"
+            ],
+            revisions: [
+                {
+                    nr: 1,
+                    authors: [
+                        "Manuel"
+                    ],
+                    comment: "Initial review"
+                }
+            ],
+            requirements: [
+                {
+                    id: "rad.hw",
+                    comment: "\
+                    All I/O is connected and functioning as intended for correct operation.\
+                    The RAD firmware was flashed using 'just rad-run'.\
+                    \
+                    This was verified by using `just sim-manual` to manually control the RAD,\
+                    switching from 'idle' to 'production' and back.\
+                    \
+                    Following the sequence:\
+                    1. Pressing Btn1, Btn2, Btn3 -> moves to 'operation' mode\
+                    2. Pressing Btn4 -> active radiation\
+                    3. Pressing Btn1 -> signal stop\
+                    4. Pressing Btn4 -> deactivate radiation\
+                    5. Observing RAD is back in 'idle' mode\
+                    "
+                },
+            ],
+        }
+    ]
+}

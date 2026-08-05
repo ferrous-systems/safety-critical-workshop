@@ -1,0 +1,36 @@
+{
+    reviews: [
+        {
+            name: "RAD",
+            utc_date: "2026-08-05T17:00utc-01",
+            authors: [
+                "Manuel"
+            ],
+            revisions: [
+                {
+                    nr: 1,
+                    authors: [
+                        "Manuel"
+                    ],
+                    comment: "Initial review"
+                }
+            ],
+            requirements: [
+                {
+                    id: "rad.hw.mcu",
+                    comment: "\
+                    The nRF52840 DK is sufficient for the intended workshop functionality in terms of I/O.\
+                    It is also used in Ferrous Systems embedded training, which provides a basic HAL to build uppon.\
+                    "
+                },
+                {
+                    id: "rad.hw.door-sensor",
+                    comment: "\
+                    The door sensor is set on the entrance door,\
+                    which is the only possibility for humans to enter the operating environment of the RAD.\
+                    "
+                }
+            ],
+        }
+    ]
+}

@@ -29,4 +29,4 @@ updating the related information and checking that the implementation still hold
 - **Parents:** ["risk.intensity"]
 
 The *RAD* product must ensure that the safe threshold defined by [req_link("risk.intensity")](./2_risk-analysis.md) is not exceeded
-to prevent serios injury or death of patients.
+to prevent serious injury or death of patients.

@@ -1,0 +1,34 @@
+{
+    reviews: [
+        {
+            name: "Risk Analysis",
+            utc_date: "2026-08-05T17:00utc-01",
+            authors: [
+                "Manuel"
+            ],
+            revisions: [
+                {
+                    nr: 1,
+                    authors: [
+                        "Manuel"
+                    ],
+                    comment: "Initial review"
+                }
+            ],
+            requirements: [
+                {
+                    id: "risk.patient-behavior",
+                    comment: "\
+                    For this demo, we assume that there is no unintended behavior from patients.\
+                    "
+                },
+                {
+                    id: "risk.wrong-cell",
+                    comment: "\
+                    For this demo, we assume that we only target intended cells.\
+                    "
+                }
+            ],
+        }
+    ]
+}

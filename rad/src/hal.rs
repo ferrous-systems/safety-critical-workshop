@@ -56,6 +56,7 @@ pub trait Hal {
     fn set_start_stop_indicator(&mut self);
 }
 
+#[cfg(feature = "hw")]
 macro_rules! led_ctrl {
     ($mode:ident, $led:expr) => {
         match $mode {
@@ -100,7 +101,6 @@ impl Hal for nrf_hal::Board {
 
     #[req_link("rad.hw.radiation-sensor")]
     fn radiation_active(&self) -> bool {
-        // TODO: replace with analog input once board has support
         self.dig_in.p1_08.is_low()
     }
 
