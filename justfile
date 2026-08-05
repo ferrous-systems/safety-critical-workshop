@@ -3,6 +3,11 @@ mantra:
     mantra collect
     mantra report --output-dir=target/mantra-report
 
+base:
+    just rad-unit-tests
+    just rad-system-tests
+    just mantra
+
 [working-directory("sim")]
 sim-manual:
     DEFMT_LOG=info cargo run --bin manual
@@ -27,9 +32,13 @@ rad-run:
 rad-build features='hw':
     DEFMT_LOG=info cargo build --bin rad --features={{ features }}
 
-[working-directory("rad")]
+profraw-file := justfile_directory() + "/target/nextest/default/raw-coverage/profdata-%p-%m.profraw"
+
 rad-unit-tests:
-    cargo test --lib --target=host-tuple --no-default-features
+    rm -rf target/nextest/default
+    mkdir -p target/nextest/default/coverage/raw-coverage
+    - RUSTFLAGS="-Cinstrument-coverage" LLVM_PROFILE_FILE="{{ profraw-file }}" cargo nextest run -p rad --lib --target=host-tuple --no-default-features
+    grcov . -s . --binary-path ./target -t html -t cobertura-pretty --ignore-not-existing -o ./target/nextest/default/coverage/ --ignore='/**/*' --ignore='target/*'
 
 export EMBSINTH_OUT_DIR := justfile_directory() + "/target"
 

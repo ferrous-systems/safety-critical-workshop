@@ -1821,16 +1821,6 @@ dependencies = [
 [[package]]
 name = "mantra-macros"
 version = "0.8.0"
-source = "git+https://github.com/mhatzl/mantra?branch=mh%2Foptional-exclude-propagation#c42a86971b4a34f655d258fc3058e426808bd78f"
-dependencies = [
- "defmt",
- "log",
- "mantra-procm 0.8.0 (git+https://github.com/mhatzl/mantra?branch=mh%2Foptional-exclude-propagation)",
-]
-
-[[package]]
-name = "mantra-macros"
-version = "0.8.0"
 source = "git+https://github.com/mhatzl/embsinth#a8639314982ff792012eed60cfc0bbe6bb283806"
 dependencies = [
  "mantra-procm 0.8.0 (git+https://github.com/mhatzl/embsinth)",
@@ -1838,18 +1828,28 @@ dependencies = [
 ]
 
 [[package]]
-name = "mantra-procm"
+name = "mantra-macros"
 version = "0.8.0"
-source = "git+https://github.com/mhatzl/mantra?branch=mh%2Foptional-exclude-propagation#c42a86971b4a34f655d258fc3058e426808bd78f"
+source = "git+https://github.com/mhatzl/mantra#8adbe90dc84c6ad8cc5561a4ac7e86a1b283851c"
 dependencies = [
- "quote",
- "syn 2.0.118",
+ "defmt",
+ "log",
+ "mantra-procm 0.8.0 (git+https://github.com/mhatzl/mantra)",
 ]
 
 [[package]]
 name = "mantra-procm"
 version = "0.8.0"
 source = "git+https://github.com/mhatzl/embsinth#a8639314982ff792012eed60cfc0bbe6bb283806"
+
+[[package]]
+name = "mantra-procm"
+version = "0.8.0"
+source = "git+https://github.com/mhatzl/mantra#8adbe90dc84c6ad8cc5561a4ac7e86a1b283851c"
+dependencies = [
+ "quote",
+ "syn 2.0.118",
+]
 
 [[package]]
 name = "mantra-schema"
@@ -2399,7 +2399,7 @@ version = "0.1.0"
 dependencies = [
  "cortex-m-rt",
  "defmt",
- "mantra-macros 0.8.0 (git+https://github.com/mhatzl/mantra?branch=mh%2Foptional-exclude-propagation)",
+ "mantra-macros 0.8.0 (git+https://github.com/mhatzl/mantra)",
  "mockall",
  "mockall_double",
  "nrf-hal",
@@ -2801,7 +2801,7 @@ version = "0.1.0"
 dependencies = [
  "cortex-m-rt",
  "defmt",
- "mantra-macros 0.8.0 (git+https://github.com/mhatzl/mantra?branch=mh%2Foptional-exclude-propagation)",
+ "mantra-macros 0.8.0 (git+https://github.com/mhatzl/mantra)",
  "nrf-hal",
 ]
 
@@ -3098,7 +3098,7 @@ version = "0.1.0"
 dependencies = [
  "embsinth",
  "log",
- "mantra-macros 0.8.0 (git+https://github.com/mhatzl/mantra?branch=mh%2Foptional-exclude-propagation)",
+ "mantra-macros 0.8.0 (git+https://github.com/mhatzl/mantra)",
 ]
 
 [[package]]

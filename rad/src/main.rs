@@ -2,10 +2,11 @@
 #![no_std]
 
 use cortex_m_rt::exception;
+use mantra_macros::satisfy_req;
 
 #[cortex_m_rt::entry]
 fn main() -> ! {
-    let mut board = nrf_hal::Board::init().unwrap();
+    let mut board = satisfy_req!("rad.sw.hal" => nrf_hal::Board::init().unwrap());
     let mut rad = rad::Rad::init();
 
     //board.print_io();

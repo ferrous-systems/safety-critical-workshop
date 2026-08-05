@@ -21,14 +21,13 @@ Medical personal must be able to start and stop radiation therapy to treat patie
 ### `usage.safe-environment`: Allow use only in safe environment
 
 - **Parents:** ["risk.wrong-usage"]
+- **Manual Verification:** true
 
 The *RAD* product must only be used in an enclosable space that restricts operation to instructed personal.
 To further reduce chance of injuries, the instructed personal must ensure that only the patient remains in the operational environement of *RAD*
 during radiation therapy.
 
 #### `usage.safe-environment.restrict-access`: Restrict access to safe environment
-
-- **Manual Verification:** true
 
 The *RAD* product must enforce that access to the safe environment is restricted and cannot be accessed during active radiation therapy.
 Manual verification of the enclosure is needed to ensure that the *RAD* is able to enforce this.
