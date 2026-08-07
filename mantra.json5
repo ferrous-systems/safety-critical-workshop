@@ -54,11 +54,11 @@
                     source: "schema",
                     pattern: "*.json5"
                 },
-                {
-                    path: "docs/reviews/phase_one",
-                    source: "schema",
-                    pattern: "*.json5"
-                }
+                // {
+                //     path: "docs/reviews/phase_one",
+                //     source: "schema",
+                //     pattern: "*.json5"
+                // }
             ]
         }
     ]

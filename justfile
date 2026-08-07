@@ -14,11 +14,19 @@ sim-manual:
 
 [working-directory("sim")]
 sim-start-stop:
-    DEFMT_LOG=info cargo run --bin start_stop_flow
+    DEFMT_LOG=info cargo run --bin start_stop_flow --no-default-features
 
 [working-directory("sim")]
 sim-build-start-stop:
     DEFMT_LOG=info cargo build --bin start_stop_flow
+
+[working-directory("sim")]
+sim-build-invariant-check:
+    DEFMT_LOG=info cargo build --bin invariant_check
+
+[working-directory("sim")]
+sim-invariant-check:
+    DEFMT_LOG=info cargo run --bin invariant_check --no-default-features
 
 [working-directory("sim")]
 sim-reset:
@@ -47,6 +55,7 @@ rad-system-tests:
     rm -rf $EMBSINTH_OUT_DIR/system-tests
     just rad-build hw-auto-testing
     just sim-build-start-stop
+    just sim-build-invariant-check
     RUST_LOG=info cargo test --target=host-tuple 
     just post-process
 

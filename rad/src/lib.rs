@@ -21,6 +21,7 @@ pub struct Rad {
     start_triggered: bool,
     stop_triggered: bool,
     prev_mode: Option<RadMode>,
+    invariant_violated: bool,
 }
 
 impl Rad {
@@ -36,6 +37,7 @@ impl Rad {
             start_triggered: false,
             stop_triggered: false,
             prev_mode: None,
+            invariant_violated: false,
         }
     }
 
@@ -73,35 +75,8 @@ impl Rad {
                 })
             }),
             RadMode::Operation => mantra_macros::impl_req!("rad.sw.operation" => {
-                mantra_macros::impl_req!("rad.sw.operation.stop" => {
-                    if hal.stop_requested() && !self.stop_triggered {
-                        #[cfg(feature = "hw")]
-                        defmt::info!("Stop requested");
-                        self.stop_triggered = true;
-                    }
-
-                    if self.stop_triggered {
-                        hal.stop_radiation();
-                    }
-
-                    mantra_macros::impl_req!("rad.sw.operation.post-condition" => {
-                        if self.stop_triggered && !hal.radiation_active() {
-                            self.mode = RadMode::Idle;
-                            self.prev_mode = Some(RadMode::Operation);
-                            self.stop_triggered = false;
-
-                            #[cfg(feature = "hw")]
-                            defmt::info!("Switching into 'idle' mode");
-                        }
-                    })
-                });
-
-                // we entered operation mode => start RAD
-                if !self.stop_triggered && self.prev_mode == Some(RadMode::Idle) {
-                    hal.start_radiation();
-                }
-
-                self.prev_mode = Some(RadMode::Operation);
+                self.base_operation(hal);
+                //self.phase_one_operation(hal);
             }),
         }
 
@@ -139,6 +114,81 @@ impl Rad {
 
         #[cfg(feature = "hw-testing")]
         hal.set_start_stop_indicator();
+    }
+
+    fn base_operation(&mut self, hal: &mut impl Hal) {
+        mantra_macros::impl_req!("rad.sw.operation.stop" => {
+            if hal.stop_requested() && !self.stop_triggered {
+                #[cfg(feature = "hw")]
+                defmt::info!("Stop requested");
+                self.stop_triggered = true;
+            }
+
+            if self.stop_triggered {
+                hal.stop_radiation();
+            }
+
+            mantra_macros::impl_req!("rad.sw.operation.post-condition" => {
+                if self.stop_triggered && !hal.radiation_active() {
+                    self.mode = RadMode::Idle;
+                    self.prev_mode = Some(RadMode::Operation);
+                    self.stop_triggered = false;
+
+                    #[cfg(feature = "hw")]
+                    defmt::info!("Switching into 'idle' mode");
+                }
+            })
+        });
+
+        // we entered operation mode => start RAD
+        if !self.stop_triggered && self.prev_mode == Some(RadMode::Idle) {
+            hal.start_radiation();
+        }
+
+        self.prev_mode = Some(RadMode::Operation);
+    }
+
+    fn phase_one_operation(&mut self, hal: &mut impl Hal) {
+        mantra_macros::impl_req!("rad.sw.operation.stop", "rad.sw.operation.invariant" => {
+            if !self.invariant_violated && operation_conditions_fulfilled(hal).is_err() {
+                #[cfg(feature = "hw")]
+                defmt::info!("Operation invariant violated");
+                self.invariant_violated = true;
+            }
+
+            if hal.stop_requested() && !self.stop_triggered {
+                #[cfg(feature = "hw")]
+                defmt::info!("Stop requested");
+                self.stop_triggered = true;
+            }
+
+            let exit_operation = self.stop_triggered || self.invariant_violated;
+
+            if exit_operation {
+                hal.stop_radiation();
+            }
+
+            mantra_macros::impl_req!("rad.sw.operation.post-condition" => {
+                if exit_operation && !hal.radiation_active() {
+                    self.mode = RadMode::Idle;
+                    self.prev_mode = Some(RadMode::Operation);
+                    self.stop_triggered = false;
+                    self.invariant_violated = false;
+
+                    #[cfg(feature = "hw")]
+                    defmt::info!("Switching into 'idle' mode");
+                }
+            })
+        });
+
+        // we entered operation mode => start RAD
+        if !(self.stop_triggered || self.invariant_violated)
+            && self.prev_mode == Some(RadMode::Idle)
+        {
+            hal.start_radiation();
+        }
+
+        self.prev_mode = Some(RadMode::Operation);
     }
 }
 
