@@ -1,0 +1,1 @@
+Based off the MIT licensed https://github.com/roland-KA/basic-report-typst-template
