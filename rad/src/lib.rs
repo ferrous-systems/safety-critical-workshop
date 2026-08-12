@@ -75,8 +75,8 @@ impl Rad {
                 })
             }),
             RadMode::Operation => mantra_macros::impl_req!("rad.sw.operation" => {
-                self.base_operation(hal);
-                //self.phase_one_operation(hal);
+                //self.base_operation(hal);
+                self.phase_one_operation(hal);
             }),
         }
 
