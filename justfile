@@ -56,7 +56,7 @@ rad-system-tests:
     just rad-build hw-auto-testing
     just sim-build-start-stop
     just sim-build-invariant-check
-    RUST_LOG=info cargo test --target=host-tuple 
+    RUST_LOG=probe_rs=warn,tracing=warn,info cargo test --target=host-tuple 
     just post-process
 
 post-process tests='system-tests':

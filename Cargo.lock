@@ -175,12 +175,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2af50177e190e07a26ab74f8b1efbfe2ef87da2116221318cb1c2e82baf7de06"
 
 [[package]]
-name = "basic-udev"
-version = "0.1.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5a45f9771ced8a774de5e5ebffbe520f52e3943bf5a9a6baa3a5d14a5de1afe6"
-
-[[package]]
 name = "bincode"
 version = "2.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1034,7 +1028,7 @@ dependencies = [
 [[package]]
 name = "embsinth"
 version = "0.1.0"
-source = "git+https://github.com/mhatzl/embsinth#a8639314982ff792012eed60cfc0bbe6bb283806"
+source = "git+https://github.com/mhatzl/embsinth#8228621c7710a9dd81642f3cc31f8741be508bc2"
 dependencies = [
  "anyhow",
  "clap",
@@ -1045,7 +1039,7 @@ dependencies = [
  "env_logger",
  "ignore",
  "log",
- "mantra-macros 0.8.0 (git+https://github.com/mhatzl/embsinth)",
+ "mantra-macros",
  "mantra-schema",
  "object 0.39.1",
  "probe-rs",
@@ -1059,11 +1053,11 @@ dependencies = [
 [[package]]
 name = "embsinth-procm"
 version = "0.1.0"
-source = "git+https://github.com/mhatzl/embsinth#a8639314982ff792012eed60cfc0bbe6bb283806"
+source = "git+https://github.com/mhatzl/embsinth#8228621c7710a9dd81642f3cc31f8741be508bc2"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 2.0.118",
+ "syn 3.0.3",
 ]
 
 [[package]]
@@ -1414,21 +1408,6 @@ name = "hexfloat2"
 version = "0.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "befe65164a090041cdf6e0d21a0ec3198d856fbfe2b76e324a073e790bb49f8c"
-
-[[package]]
-name = "hidapi"
-version = "2.6.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c78dadfc12f865bc3fcac3897e64533b930737ceb9ef245c8277de98d0b010e9"
-dependencies = [
- "basic-udev",
- "cc",
- "cfg-if",
- "libc",
- "nix 0.30.1",
- "pkg-config",
- "windows-sys 0.61.2",
-]
 
 [[package]]
 name = "hkdf"
@@ -1821,26 +1800,13 @@ dependencies = [
 [[package]]
 name = "mantra-macros"
 version = "0.8.0"
-source = "git+https://github.com/mhatzl/embsinth#a8639314982ff792012eed60cfc0bbe6bb283806"
-dependencies = [
- "mantra-procm 0.8.0 (git+https://github.com/mhatzl/embsinth)",
- "regex",
-]
-
-[[package]]
-name = "mantra-macros"
-version = "0.8.0"
 source = "git+https://github.com/mhatzl/mantra#8adbe90dc84c6ad8cc5561a4ac7e86a1b283851c"
 dependencies = [
  "defmt",
  "log",
- "mantra-procm 0.8.0 (git+https://github.com/mhatzl/mantra)",
+ "mantra-procm",
+ "regex",
 ]
-
-[[package]]
-name = "mantra-procm"
-version = "0.8.0"
-source = "git+https://github.com/mhatzl/embsinth#a8639314982ff792012eed60cfc0bbe6bb283806"
 
 [[package]]
 name = "mantra-procm"
@@ -1962,18 +1928,6 @@ checksum = "598beaf3cc6fdd9a5dfb1630c2800c7acd31df7aaf0f565796fba2b53ca1af1b"
 dependencies = [
  "bitflags 1.3.2",
  "cfg-if",
- "libc",
-]
-
-[[package]]
-name = "nix"
-version = "0.30.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "74523f3a35e05aba87a1d978330aef40f67b0304ac79c1c00b294c9830543db6"
-dependencies = [
- "bitflags 2.13.1",
- "cfg-if",
- "cfg_aliases",
  "libc",
 ]
 
@@ -2340,7 +2294,6 @@ dependencies = [
  "dunce",
  "flate2",
  "futures-lite",
- "hidapi",
  "ihex",
  "itertools",
  "jep106",
@@ -2377,18 +2330,18 @@ dependencies = [
 
 [[package]]
 name = "proc-macro2"
-version = "1.0.106"
+version = "1.0.107"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8fd00f0bb2e90d81d1044c2b32617f68fcb9fa3bb7640c23e9c748e53fb30934"
+checksum = "985e7ec9bb745e6ce6535b544d84d6cd6f7ad8bd711c398938ae983b91a766d9"
 dependencies = [
  "unicode-ident",
 ]
 
 [[package]]
 name = "quote"
-version = "1.0.46"
+version = "1.0.47"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dfbc457d0c7a0759a614551b11a6409e5951f6c7537be1f1b7682b9ae9230368"
+checksum = "1fbf4db142a473a8d80c26bbf18454ed458bf8d26c8219c331daecfdbd079001"
 dependencies = [
  "proc-macro2",
 ]
@@ -2399,7 +2352,7 @@ version = "0.1.0"
 dependencies = [
  "cortex-m-rt",
  "defmt",
- "mantra-macros 0.8.0 (git+https://github.com/mhatzl/mantra)",
+ "mantra-macros",
  "mockall",
  "mockall_double",
  "nrf-hal",
@@ -2801,7 +2754,7 @@ version = "0.1.0"
 dependencies = [
  "cortex-m-rt",
  "defmt",
- "mantra-macros 0.8.0 (git+https://github.com/mhatzl/mantra)",
+ "mantra-macros",
  "nrf-hal",
 ]
 
@@ -3098,7 +3051,7 @@ version = "0.1.0"
 dependencies = [
  "embsinth",
  "log",
- "mantra-macros 0.8.0 (git+https://github.com/mhatzl/mantra)",
+ "mantra-macros",
 ]
 
 [[package]]

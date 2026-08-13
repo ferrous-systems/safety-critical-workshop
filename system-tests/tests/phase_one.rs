@@ -1,13 +1,12 @@
 use std::time::Duration;
 
 use mantra_macros::{assert_req, req_verified};
-use system_tests::{WORKSPACE_DIR, init};
+use system_tests::{BINARY_DIR, init};
 
 #[req_verified("rad.sw.invariant")]
 #[embsinth::test]
 fn invariant_check() {
-    let (mut rad_connection, mut sim_connection) =
-        init(&WORKSPACE_DIR.join("target/thumbv7em-none-eabihf/debug/invariant_check"));
+    let (mut rad_connection, mut sim_connection) = init(&BINARY_DIR.join("invariant_check"));
 
     assert_req!("rad.sw.operation.start" =>
         rad_connection
