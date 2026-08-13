@@ -1,0 +1,7 @@
+[target."thumbv7em-ferrocene.facade-eabi"]
+runner = [
+    "sh",
+    "-c",
+    "docker run -v $HOME:$HOME --init --rm ubuntu-qemu-arm qemu-arm-static \"$@\"",
+    "--"
+]

@@ -1,0 +1,18 @@
+manifest-version = 1
+
+[products.ferrocene]
+release = "stable-26.05.0"
+packages = [
+    "rust-src",
+    "llvm-tools-${rustc-host}",
+    "cargo-${rustc-host}",
+    "rustc-${rustc-host}",
+    "clippy-${rustc-host}",
+    "rust-std-${rustc-host}",
+    "rust-analyzer-${rustc-host}",
+    "rustfmt-${rustc-host}",
+    "rust-std-thumbv7em-none-eabihf",
+    "rust-std-thumbv7em-ferrocene.facade-eabihf",
+    "rust-std-thumbv7em-none-eabi",
+    "rust-std-thumbv7em-ferrocene.facade-eabi"
+]
