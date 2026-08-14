@@ -7,3 +7,6 @@ edition = "2024"
 mantra-macros = { workspace = true, features = ["log"] }
 embsinth = { git = "https://github.com/mhatzl/embsinth" }
 log = "0.4.33"
+
+[features]
+phase-one = []

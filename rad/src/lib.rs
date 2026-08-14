@@ -21,6 +21,7 @@ pub struct Rad {
     start_triggered: bool,
     stop_triggered: bool,
     prev_mode: Option<RadMode>,
+    #[cfg(feature = "phase-one")]
     invariant_violated: bool,
 }
 
@@ -37,6 +38,7 @@ impl Rad {
             start_triggered: false,
             stop_triggered: false,
             prev_mode: None,
+            #[cfg(feature = "phase-one")]
             invariant_violated: false,
         }
     }
@@ -75,7 +77,10 @@ impl Rad {
                 })
             }),
             RadMode::Operation => mantra_macros::impl_req!("rad.sw.operation" => {
-                //self.base_operation(hal);
+                #[cfg(not(feature = "phase-one"))]
+                self.base_operation(hal);
+
+                #[cfg(feature = "phase-one")]
                 self.phase_one_operation(hal);
             }),
         }
@@ -116,6 +121,7 @@ impl Rad {
         hal.set_start_stop_indicator();
     }
 
+    #[cfg(not(feature = "phase-one"))]
     fn base_operation(&mut self, hal: &mut impl Hal) {
         mantra_macros::impl_req!("rad.sw.operation.stop" => {
             if hal.stop_requested() && !self.stop_triggered {
@@ -148,6 +154,7 @@ impl Rad {
         self.prev_mode = Some(RadMode::Operation);
     }
 
+    #[cfg(feature = "phase-one")]
     fn phase_one_operation(&mut self, hal: &mut impl Hal) {
         mantra_macros::impl_req!("rad.sw.operation.stop", "rad.sw.operation.invariant" => {
             if !self.invariant_violated && operation_conditions_fulfilled(hal).is_err() {

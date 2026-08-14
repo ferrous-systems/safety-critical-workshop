@@ -3,6 +3,7 @@ use std::time::Duration;
 use mantra_macros::{assert_req, req_verified};
 use system_tests::{BINARY_DIR, init};
 
+#[cfg(feature = "phase-one")]
 #[req_verified("rad.sw.invariant")]
 #[embsinth::test]
 fn invariant_check() {

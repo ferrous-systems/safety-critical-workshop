@@ -4,8 +4,14 @@ mantra:
     mantra report --output-dir=target/mantra-report
 
 base:
+    just test base
+
+phase-one:
+    just test phase-one
+
+test phase='base':
     just rad-unit-tests
-    just rad-system-tests
+    just rad-system-tests {{ phase }}
     just mantra
 
 [working-directory("sim")]
@@ -51,12 +57,13 @@ rad-unit-tests:
 export EMBSINTH_OUT_DIR := justfile_directory() + "/target"
 
 [working-directory("system-tests")]
-rad-system-tests:
+rad-system-tests phase='base':
     rm -rf $EMBSINTH_OUT_DIR/system-tests
-    just rad-build hw-auto-testing
+    just rad-build {{ if phase == "phase-one" { "hw-auto-testing,phase-one" } else { "hw-auto-testing" } }}
     just sim-build-start-stop
     just sim-build-invariant-check
-    RUST_LOG=probe_rs=warn,tracing=warn,info cargo test --target=host-tuple 
+    # "-j=1" is important for cargo-nextest, because it otherwise uses multiply processes to run tests in parallel
+    RUST_LOG=probe_rs=warn,tracing=warn,info cargo nextest run -j=1 --target=host-tuple {{ if phase == "phase-one" { "--features=phase-one" } else { "" } }}
     just post-process
 
 post-process tests='system-tests':

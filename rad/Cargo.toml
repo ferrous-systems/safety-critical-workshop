@@ -17,3 +17,4 @@ mockall_double = "0.3.1"
 hw = ["nrf-hal", "defmt"]
 hw-testing = ["hw"]
 hw-auto-testing = ["hw-testing", "mantra-macros/defmt"]
+phase-one = []
