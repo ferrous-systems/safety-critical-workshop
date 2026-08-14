@@ -31,6 +31,7 @@ fn main() -> ! {
     // RAD stays in 'operation' until radiation is deactivated
     sim.set_radiation_state(sim::RadiationState::Deactive);
     sim.wait_update();
+    sim.wait_update();
 
     assert_eq!(
         sim.actual_mode(),

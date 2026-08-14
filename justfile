@@ -38,6 +38,10 @@ sim-invariant-check:
 sim-reset:
     DEFMT_LOG=info cargo run --bin reset
 
+[working-directory("sim")]
+sim-build-reset:
+    DEFMT_LOG=info cargo build --bin reset
+
 [working-directory("rad")]
 rad-run:
     DEFMT_LOG=info cargo run --bin rad --features=hw-testing
@@ -60,6 +64,7 @@ export EMBSINTH_OUT_DIR := justfile_directory() + "/target"
 rad-system-tests phase='base':
     rm -rf $EMBSINTH_OUT_DIR/system-tests
     just rad-build {{ if phase == "phase-one" { "hw-auto-testing,phase-one" } else { "hw-auto-testing" } }}
+    just sim-build-reset
     just sim-build-start-stop
     just sim-build-invariant-check
     # "-j=1" is important for cargo-nextest, because it otherwise uses multiply processes to run tests in parallel
