@@ -86,7 +86,9 @@ fn panic_test() {
     assert!(false)
 }
 
-#[should_panic(expected = "Failed to attach to rad target: ProbeError { kind: FailedOpening }")]
+#[should_panic(
+    expected = "Failed to attach to rad target: ProbeError { kind: FailedOpening, source: None }"
+)]
 #[embsinth::test]
 fn other_panic_test() {
     let rad_probe_1 = attach_rad_probe();
