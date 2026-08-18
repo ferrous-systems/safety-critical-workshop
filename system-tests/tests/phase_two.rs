@@ -3,11 +3,11 @@ use std::time::Duration;
 use mantra_macros::{assert_req, req_verified};
 use system_tests::{BINARY_DIR, init};
 
-#[cfg(feature = "phase-one")]
-#[req_verified("rad.sw.operation.invariant")]
+//#[cfg(feature = "phase-two")]
+#[req_verified("rad.sw.limit-radiation")]
 #[embsinth::test]
-fn invariant_check() {
-    let (mut rad_connection, mut sim_connection) = init(&BINARY_DIR.join("invariant_check"));
+fn radiation_limit() {
+    let (mut rad_connection, mut sim_connection) = init(&BINARY_DIR.join("limit_radiation"));
 
     assert_req!("rad.sw.operation.start" =>
         rad_connection
@@ -28,30 +28,31 @@ fn invariant_check() {
     );
 
     assert!(
-        sim_connection
-            .search_msg_for(Duration::from_secs(5), |msg| {
-                msg.message.starts_with("Breaking RAD invariant")
+        rad_connection
+            .search_msg_for(Duration::from_secs(15), |msg| {
+                msg.message.starts_with("Radiation intensity exceeded")
             })
             .is_some(),
-        "Invariant was not violated by simulation"
+        "Radiation intensity was not exceeded after 15s"
     );
 
     assert!(
         rad_connection
-            .search_msg_for(Duration::from_secs(5), |msg| {
-                msg.message.starts_with("Operation invariant violated")
+            .search_msg_for(Duration::from_secs(10), |msg| {
+                msg.message
+                    .starts_with("Radiation again below restart limit")
             })
             .is_some(),
-        "Invariant violation not detected"
+        "Radiation intensity did not fall below restart limit after 10s"
     );
 
     assert!(
         sim_connection
             .search_msg_for(Duration::from_secs(5), |msg| {
                 msg.message
-                    .starts_with("RAD invariant flow done -> exiting")
+                    .starts_with("RAD limit-radiation done -> exiting")
             })
             .is_some(),
-        "Invariant simulation did not succeed"
+        "Limit radiation simulation did not succeed"
     );
 }

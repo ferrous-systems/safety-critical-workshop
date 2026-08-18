@@ -16,10 +16,10 @@
                     path: "docs/requirements/phase_one",
                     source: "markup",
                 },
-                // {
-                //     path: "docs/requirements/phase_two",
-                //     source: "markup",
-                // }
+                {
+                    path: "docs/requirements/phase_two",
+                    source: "markup",
+                }
             ],
             annotations: [
                 {
