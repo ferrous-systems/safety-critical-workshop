@@ -4,7 +4,7 @@ use mantra_macros::{assert_req, req_verified};
 use system_tests::{BINARY_DIR, init};
 
 #[cfg(feature = "phase-one")]
-#[req_verified("rad.sw.invariant")]
+#[req_verified("rad.sw.operation.invariant")]
 #[embsinth::test]
 fn invariant_check() {
     let (mut rad_connection, mut sim_connection) = init(&BINARY_DIR.join("invariant_check"));
