@@ -12,10 +12,10 @@
                     path: "docs/requirements/base",
                     source: "markup",
                 },
-                // {
-                //     path: "docs/requirements/phase_one",
-                //     source: "markup",
-                // },
+                {
+                    path: "docs/requirements/phase_one",
+                    source: "markup",
+                },
                 // {
                 //     path: "docs/requirements/phase_two",
                 //     source: "markup",
@@ -46,6 +46,18 @@
                             pattern: "*cobertura.xml",
                         }
                     }
+                }
+            ],
+            reviews: [
+                {
+                    path: "docs/reviews/base",
+                    source: "schema",
+                    pattern: "*.json5"
+                },
+                {
+                    path: "docs/reviews/phase_one",
+                    source: "schema",
+                    pattern: "*.json5"
                 }
             ]
         }

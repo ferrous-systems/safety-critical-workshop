@@ -4,29 +4,47 @@ mantra:
     mantra report --output-dir=target/mantra-report
 
 base:
+    just test base
+
+phase-one:
+    just test phase-one
+
+test phase='base':
     just rad-unit-tests
-    just rad-system-tests
+    just rad-system-tests {{ phase }}
     just mantra
 
 [working-directory("sim")]
 sim-manual:
-    DEFMT_LOG=info cargo run --bin manual
+    DEFMT_LOG=info cargo run --bin manual --no-default-features
 
 [working-directory("sim")]
 sim-start-stop:
-    DEFMT_LOG=info cargo run --bin start_stop_flow
+    DEFMT_LOG=info cargo run --bin start_stop_flow --no-default-features
 
 [working-directory("sim")]
 sim-build-start-stop:
     DEFMT_LOG=info cargo build --bin start_stop_flow
 
 [working-directory("sim")]
+sim-build-invariant-check:
+    DEFMT_LOG=info cargo build --bin invariant_check
+
+[working-directory("sim")]
+sim-invariant-check:
+    DEFMT_LOG=info cargo run --bin invariant_check --no-default-features
+
+[working-directory("sim")]
 sim-reset:
     DEFMT_LOG=info cargo run --bin reset
 
+[working-directory("sim")]
+sim-build-reset:
+    DEFMT_LOG=info cargo build --bin reset
+
 [working-directory("rad")]
 rad-run:
-    DEFMT_LOG=info cargo run --bin rad
+    DEFMT_LOG=info cargo run --bin rad --features=hw-testing
 
 [working-directory("rad")]
 rad-build features='hw':
@@ -43,11 +61,14 @@ rad-unit-tests:
 export EMBSINTH_OUT_DIR := justfile_directory() + "/target"
 
 [working-directory("system-tests")]
-rad-system-tests:
+rad-system-tests phase='base':
     rm -rf $EMBSINTH_OUT_DIR/system-tests
-    just rad-build hw-testing
+    just rad-build {{ if phase == "phase-one" { "hw-auto-testing,phase-one" } else { "hw-auto-testing" } }}
+    just sim-build-reset
     just sim-build-start-stop
-    RUST_LOG=info cargo test --target=host-tuple 
+    just sim-build-invariant-check
+    # "-j=1" is important for cargo-nextest, because it otherwise uses multiply processes to run tests in parallel
+    RUST_LOG=probe_rs=warn,tracing=warn,info cargo nextest run -j=1 --target=host-tuple {{ if phase == "phase-one" { "--features=phase-one" } else { "" } }}
     just post-process
 
 post-process tests='system-tests':

@@ -7,4 +7,8 @@ edition = "2021"
 nrf-hal = { path = "../nrf-hal" }
 cortex-m-rt.workspace = true
 defmt.workspace = true
-mantra-macros = { workspace = true, features = ["defmt"] }
+mantra-macros = { workspace = true }
+
+[features]
+default = ["mantra"]
+mantra = ["mantra-macros/defmt"]

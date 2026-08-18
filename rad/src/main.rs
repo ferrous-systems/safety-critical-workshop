@@ -2,10 +2,8 @@
 #![no_std]
 
 #[cfg(feature = "hw")]
-use core::time::Duration;
-
-#[cfg(feature = "hw")]
 use cortex_m_rt::exception;
+#[cfg(feature = "hw")]
 use mantra_macros::satisfy_req;
 
 #[cfg(feature = "hw")]
@@ -29,6 +27,7 @@ fn main() -> ! {
     }
 }
 
+#[cfg(feature = "hw")]
 /// Our custom panic handler.
 #[cfg(feature = "hw")]
 #[panic_handler]
@@ -37,14 +36,16 @@ fn panic(info: &core::panic::PanicInfo) -> ! {
     nrf_hal::fail();
 }
 
+#[cfg(feature = "hw")]
 /// The default HardFault handler just spins, so replace it.
 #[cfg(feature = "hw")]
 #[exception]
 unsafe fn HardFault(_ef: &cortex_m_rt::ExceptionFrame) -> ! {
     defmt::error!("HardFault!");
-    nrf_hal::fail();
+    nrf_hal::fail()
 }
 
+#[cfg(feature = "hw")]
 // this prevents the panic message being printed *twice* when `defmt::panic!` is invoked
 #[cfg(feature = "hw")]
 #[defmt::panic_handler]
