@@ -98,7 +98,7 @@ A LED will be used to indicate if radiation output is on (LED is ON) or off (LED
 
 ### `rad.hw.radiation-sensor`: Sensor to measure radiation output
 
-- **Parents:** ["radiation.measure-v2"]
+- **Parents:** ["radiation.measure"]
 
 A digital input is used to detect if radiation is output and measured over time to track how long radiation has been active.
 

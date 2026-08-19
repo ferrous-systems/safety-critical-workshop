@@ -252,32 +252,38 @@ impl Rad {
 
         // we entered operation mode => control radiation
         if !(self.stop_triggered || self.invariant_violated) {
-            mantra_macros::impl_req!("rad.sw.limit-radiation" => {
-                if !self.intensity_limit_reached && self.rad_start_time.map(|start| start.abs_diff(hal.sys_time()).as_secs() > 5).unwrap_or_default() {
+            //mantra_macros::impl_req!("rad.sw.limit-radiation" => {
+            if !self.intensity_limit_reached
+                && self
+                    .rad_start_time
+                    .map(|start| start.abs_diff(hal.sys_time()).as_secs() > 5)
+                    .unwrap_or_default()
+            {
+                #[cfg(feature = "hw")]
+                defmt::warn!("Radiation intensity exceeded");
+
+                hal.stop_radiation();
+                self.intensity_limit_reached = true;
+            } else if self.intensity_limit_reached {
+                if hal.radiation_active() {
+                    self.rad_start_time = Some(hal.sys_time());
+                } else if self
+                    .rad_start_time
+                    .map(|start| start.abs_diff(hal.sys_time()).as_secs() > 3)
+                    .unwrap_or_default()
+                {
+                    self.intensity_limit_reached = false;
+                    self.rad_start_time = None;
+
                     #[cfg(feature = "hw")]
-                    defmt::warn!("Radiation intensity exceeded");
-
-                    hal.stop_radiation();
-                    self.intensity_limit_reached = true;
-                } else if self.intensity_limit_reached {
-                    if hal.radiation_active() {
-                        self.rad_start_time = Some(hal.sys_time());
-                    } else if self
-                        .rad_start_time
-                        .map(|start| start.abs_diff(hal.sys_time()).as_secs() > 3)
-                        .unwrap_or_default() {
-                            self.intensity_limit_reached = false;
-                            self.rad_start_time = None;
-
-                            #[cfg(feature = "hw")]
-                            defmt::info!("Radiation again below restart limit");
-                        }
+                    defmt::info!("Radiation again below restart limit");
                 }
+            }
 
-                if !self.intensity_limit_reached && !hal.radiation_active() {
-                    hal.start_radiation();
-                }
-            });
+            if !self.intensity_limit_reached && !hal.radiation_active() {
+                hal.start_radiation();
+            }
+            //});
         }
 
         self.prev_mode = Some(RadMode::Operation);
