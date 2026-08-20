@@ -69,6 +69,26 @@ impl Sim {
         }
     }
 
+    /// Execute `f` and then [`Self::update`] in a loop until `f` returns `true`.
+    pub fn update_until<F>(&mut self, mut f: F)
+    where
+        F: FnMut(&mut Self) -> bool,
+    {
+        while !f(self) {
+            self.update();
+        }
+    }
+
+    /// Execute `f`, then [`Self::wait_update`] in a loop until `f` returns `true`.
+    pub fn wait_update_until<F>(&mut self, mut f: F)
+    where
+        F: FnMut(&mut Self) -> bool,
+    {
+        while !f(self) {
+            self.wait_update();
+        }
+    }
+
     /// Bring *RAD* I/O production mode.
     ///
     /// **Note:** This internally calls `Self::update` to set the *RAD* I/O for production mode.
@@ -90,23 +110,19 @@ impl Sim {
         let sys_time = self.sys_time();
         self.expected_mode = RadMode::Operation;
 
-        self.update_loop(|sim| {
-            if sim.start_request_detected() && sim.actual_mode() == sim.expected_mode {
-                return ControlFlow::Break(());
-            } else if sys_time.abs_diff(sim.sys_time()).as_secs() > MAX_WAIT_TIME_SEC {
+        self.update_until(|sim| {
+            if sys_time.abs_diff(sim.sys_time()).as_secs() > MAX_WAIT_TIME_SEC {
                 panic!("RAD did not detect start request after ~{MAX_WAIT_TIME_SEC}s");
             }
-            ControlFlow::Continue(())
+            sim.start_request_detected() && sim.actual_mode() == sim.expected_mode
         });
 
         let sys_time = self.sys_time();
-        self.update_loop(|sim| {
-            if sim.radiation_relay() == OutputState::On {
-                return ControlFlow::Break(());
-            } else if sys_time.abs_diff(sim.sys_time()).as_secs() > MAX_WAIT_TIME_SEC {
+        self.update_until(|sim| {
+            if sys_time.abs_diff(sim.sys_time()).as_secs() > MAX_WAIT_TIME_SEC {
                 panic!("RAD did not activate radiation relay after ~{MAX_WAIT_TIME_SEC}s");
             }
-            ControlFlow::Continue(())
+            sim.radiation_relay() == OutputState::On
         });
 
         assert_eq!(
@@ -147,18 +163,17 @@ impl Sim {
         self.wait_update();
 
         let sys_time = self.sys_time();
-        self.update_loop(|sim| {
+        self.update_until(|sim| {
             // RAD should have turned of radiation with requested stop
             if sim.radiation_relay() == OutputState::Off {
                 sim.set_radiation_state(RadiationState::Deactive);
             }
 
-            if sim.actual_mode() == RadMode::Idle {
-                return ControlFlow::Break(());
-            } else if sys_time.abs_diff(sim.sys_time()).as_secs() > MAX_WAIT_TIME_SEC {
+            if sys_time.abs_diff(sim.sys_time()).as_secs() > MAX_WAIT_TIME_SEC {
                 panic!("RAD did go back to 'idle' after ~{MAX_WAIT_TIME_SEC}s");
             }
-            ControlFlow::Continue(())
+
+            sim.actual_mode() == RadMode::Idle
         });
 
         self.expected_mode = RadMode::Idle;
