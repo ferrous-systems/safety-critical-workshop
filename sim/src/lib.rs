@@ -28,9 +28,11 @@ fn defmt_panic() -> ! {
 
 defmt::timestamp!("{=u64:tus}", nrf_hal::uptime_us());
 
-pub const UPDATE_DELAY_MS: u64 = 50;
+/// Duration on how long the simulation waits to detect input updates.
+pub const UPDATE_DELAY: Duration = Duration::from_millis(50);
 
-const MAX_WAIT_TIME_SEC: u64 = 5;
+/// Duration on how long the simulation waits for conditions.
+pub const MAX_WAIT_TIME: Duration = Duration::from_secs(10);
 
 pub struct Sim {
     board: Board,
@@ -38,6 +40,7 @@ pub struct Sim {
 }
 
 impl Sim {
+    /// Initialize the simulation device
     pub fn init() -> Self {
         let mut sim = Self {
             board: Board::init().expect("Failed to initialize the board"),
@@ -54,6 +57,67 @@ impl Sim {
         sim.board.print_io();
 
         sim
+    }
+
+    /// Execute `f` and then [`Self::update`] in a loop that never returns.
+    pub fn update_forever<F>(&mut self, mut f: F) -> !
+    where
+        F: FnMut(&mut Self),
+    {
+        loop {
+            f(self);
+            self.update();
+        }
+    }
+
+    /// Execute `f` and then [`Self::update`] in a loop until `f` returns `true`.
+    ///
+    /// **Note:** Panics after [`MAX_WAIT_TIME`].
+    pub fn update_until<F>(&mut self, mut f: F, timeout_msg: &str)
+    where
+        F: FnMut(&mut Self) -> bool,
+    {
+        let sys_time = self.sys_time();
+        while !f(self) {
+            if sys_time.abs_diff(self.sys_time()) > MAX_WAIT_TIME {
+                panic!("After {MAX_WAIT_TIME:?}: {}", timeout_msg);
+            }
+
+            self.update();
+        }
+    }
+
+    /// Execute `f` and then [`Self::update`] in a loop until `f` returns `true`.
+    pub fn update_until_with_timeout<F>(&mut self, mut f: F, timeout_sec: u64, timeout_msg: &str)
+    where
+        F: FnMut(&mut Self) -> bool,
+    {
+        let timeout = Duration::from_secs(timeout_sec);
+        let sys_time = self.sys_time();
+        while !f(self) {
+            if sys_time.abs_diff(self.sys_time()) > timeout {
+                panic!("After {timeout:?}: {}", timeout_msg);
+            }
+
+            self.update();
+        }
+    }
+
+    /// Execute `f`, then [`Self::wait_update`] in a loop until `f` returns `true`.
+    ///
+    /// **Note:** Panics after [`MAX_WAIT_TIME`].
+    pub fn wait_update_until<F>(&mut self, mut f: F, timeout_msg: &str)
+    where
+        F: FnMut(&mut Self) -> bool,
+    {
+        let sys_time = self.sys_time();
+        while !f(self) {
+            if sys_time.abs_diff(self.sys_time()) > MAX_WAIT_TIME {
+                panic!("After {MAX_WAIT_TIME:?}: {}", timeout_msg);
+            }
+
+            self.wait_update();
+        }
     }
 
     /// Bring *RAD* I/O production mode.
@@ -79,29 +143,17 @@ impl Sim {
             self.set_start_stop(StartStopState::Start);
         });
 
-        let sys_time = self.sys_time();
         self.expected_mode = RadMode::Operation;
 
-        loop {
-            if self.start_request_detected() && self.actual_mode() == self.expected_mode {
-                break;
-            } else if sys_time.abs_diff(self.sys_time()).as_secs() > MAX_WAIT_TIME_SEC {
-                panic!("RAD did not detect start request after ~{MAX_WAIT_TIME_SEC}s");
-            }
+        self.update_until(
+            |sim| sim.start_request_detected() && sim.actual_mode() == sim.expected_mode,
+            "RAD did not detect start request",
+        );
 
-            self.update();
-        }
-
-        let sys_time = self.sys_time();
-        loop {
-            if self.radiation_relay() == OutputState::On {
-                break;
-            } else if sys_time.abs_diff(self.sys_time()).as_secs() > MAX_WAIT_TIME_SEC {
-                panic!("RAD did not activate radiation relay after ~{MAX_WAIT_TIME_SEC}s");
-            }
-
-            self.update();
-        }
+        self.update_until(
+            |sim| sim.radiation_relay() == OutputState::On,
+            "RAD did not activate radiation relay",
+        );
 
         assert_eq!(
             self.radiation_relay(),
@@ -140,21 +192,17 @@ impl Sim {
 
         self.wait_update();
 
-        let sys_time = self.sys_time();
-        loop {
-            // RAD should have turned of radiation with requested stop
-            if self.radiation_relay() == OutputState::Off {
-                self.set_radiation_state(RadiationState::Deactive);
-            }
+        self.update_until(
+            |sim| {
+                // RAD should have turned of radiation with requested stop
+                if sim.radiation_relay() == OutputState::Off {
+                    sim.set_radiation_state(RadiationState::Deactive);
+                }
 
-            if self.actual_mode() == RadMode::Idle {
-                break;
-            } else if sys_time.abs_diff(self.sys_time()).as_secs() > MAX_WAIT_TIME_SEC {
-                panic!("RAD did go back to 'idle' after ~{MAX_WAIT_TIME_SEC}s");
-            }
-
-            self.update();
-        }
+                sim.actual_mode() == RadMode::Idle
+            },
+            "RAD did go back to 'idle'",
+        );
 
         self.expected_mode = RadMode::Idle;
         assert_eq!(
@@ -282,7 +330,7 @@ impl Sim {
     pub fn wait_update(&mut self) {
         self.update();
 
-        self.wait(Duration::from_millis(UPDATE_DELAY_MS)); // make sure RAD device received the update
+        self.wait(UPDATE_DELAY); // make sure RAD device received the update
 
         self.update();
     }

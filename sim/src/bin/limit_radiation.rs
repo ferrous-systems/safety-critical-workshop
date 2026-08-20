@@ -7,15 +7,10 @@ use sim::{self as _, OutputState, RadMode, Sim};
 fn main() -> ! {
     let mut sim = Sim::init();
 
-    let start_time = sim.sys_time();
-    loop {
-        if sim.actual_mode() == RadMode::Idle {
-            break;
-        } else if start_time.abs_diff(sim.sys_time()).as_secs() > 5 {
-            panic!("RAD not in 'idle' after startup delay");
-        }
-        sim.update();
-    }
+    sim.update_until(
+        |sim| sim.actual_mode() == RadMode::Idle,
+        "RAD not in 'idle' after startup delay",
+    );
 
     defmt::info!("Starting RAD operation");
     sim.rad_to_production();
@@ -27,32 +22,28 @@ fn main() -> ! {
     );
 
     defmt::info!("Waiting until radiation limit is hit");
-    let start_time = sim.sys_time();
-    loop {
-        if sim.radiation_relay() == OutputState::Off {
-            sim.set_radiation_state(sim::RadiationState::Deactive);
-            break;
-        } else if start_time.abs_diff(sim.sys_time()).as_secs() > 10 {
-            panic!("RAD did not raise radiation limit after 10s");
-        }
-
-        sim.wait_update();
-    }
+    sim.update_until_with_timeout(
+        |sim| {
+            (sim.radiation_relay() == OutputState::Off)
+                .then(|| sim.set_radiation_state(sim::RadiationState::Deactive))
+                .is_some()
+        },
+        10,
+        "RAD did not raise radiation limit",
+    );
 
     defmt::info!("Radiation limit hit, waiting until radiation falls again");
     sim.wait_update();
 
-    let start_time = sim.sys_time();
-    loop {
-        if sim.radiation_relay() == OutputState::On {
-            sim.set_radiation_state(sim::RadiationState::Active);
-            break;
-        } else if start_time.abs_diff(sim.sys_time()).as_secs() > 10 {
-            panic!("RAD did not restart radiation after 10s");
-        }
-
-        sim.wait_update();
-    }
+    sim.update_until_with_timeout(
+        |sim| {
+            (sim.radiation_relay() == OutputState::On)
+                .then(|| sim.set_radiation_state(sim::RadiationState::Active))
+                .is_some()
+        },
+        10,
+        "RAD did not restart radiation after 10s",
+    );
 
     defmt::info!("Moving RAD to 'idle'");
 
