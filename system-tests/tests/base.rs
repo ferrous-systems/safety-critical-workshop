@@ -79,7 +79,7 @@ fn start_stop_flow() {
 fn panic_test() {
     let rad_probe = attach_rad_probe();
 
-    let mut rad_connection = rad_probe
+    let _rad_connection = rad_probe
         .flash_once_and_connect(BINARY_DIR.join(RAD_BINARY_NAME))
         .expect("Failed to flash rad binary");
 
@@ -94,12 +94,12 @@ fn other_panic_test() {
     let rad_probe_1 = attach_rad_probe();
     let rad_probe_2 = attach_rad_probe();
 
-    let mut rad_connection_1 = rad_probe_1
+    let _rad_connection_1 = rad_probe_1
         .flash_once_and_connect(BINARY_DIR.join(RAD_BINARY_NAME))
         .expect("Failed to flash rad binary");
 
     // Note: This will fail to attach the probe, because rad_probe_1 is already attached
-    let mut rad_connection_2 = rad_probe_2
+    let _rad_connection_2 = rad_probe_2
         .flash_once_and_connect(BINARY_DIR.join(RAD_BINARY_NAME))
         .expect("Failed to flash rad binary");
 

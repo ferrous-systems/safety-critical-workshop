@@ -1041,7 +1041,7 @@ dependencies = [
 [[package]]
 name = "embsinth"
 version = "0.1.0"
-source = "git+https://github.com/mhatzl/embsinth#bc884f1abe4497160b12d4168ce20c0f22a94f4c"
+source = "git+https://github.com/mhatzl/embsinth#676305b9bb61b22c358a3b6593d6204f4e49ddea"
 dependencies = [
  "anyhow",
  "clap",
@@ -1066,7 +1066,7 @@ dependencies = [
 [[package]]
 name = "embsinth-procm"
 version = "0.1.0"
-source = "git+https://github.com/mhatzl/embsinth#bc884f1abe4497160b12d4168ce20c0f22a94f4c"
+source = "git+https://github.com/mhatzl/embsinth#676305b9bb61b22c358a3b6593d6204f4e49ddea"
 dependencies = [
  "proc-macro2",
  "quote",

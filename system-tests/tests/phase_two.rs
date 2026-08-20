@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use mantra_macros::{assert_req, req_verified};
+use mantra_macros::assert_req;
 use system_tests::{BINARY_DIR, init};
 
 #[cfg(feature = "phase-two")]
