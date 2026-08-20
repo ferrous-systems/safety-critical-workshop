@@ -28,9 +28,8 @@ fn defmt_panic() -> ! {
 
 defmt::timestamp!("{=u64:tus}", nrf_hal::uptime_us());
 
-pub const UPDATE_DELAY_MS: u64 = 50;
-
-const MAX_WAIT_TIME_SEC: u64 = 5;
+pub const UPDATE_DELAY_MS: Duration = Duration::from_millis(50);
+const MAX_WAIT_TIME_SEC: Duration = Duration::from_secs(5);
 
 pub struct Sim {
     board: Board,
@@ -111,16 +110,16 @@ impl Sim {
         self.expected_mode = RadMode::Operation;
 
         self.update_until(|sim| {
-            if sys_time.abs_diff(sim.sys_time()).as_secs() > MAX_WAIT_TIME_SEC {
-                panic!("RAD did not detect start request after ~{MAX_WAIT_TIME_SEC}s");
+            if sys_time.abs_diff(sim.sys_time()) > MAX_WAIT_TIME_SEC {
+                panic!("RAD did not detect start request after ~{MAX_WAIT_TIME_SEC:?}");
             }
             sim.start_request_detected() && sim.actual_mode() == sim.expected_mode
         });
 
         let sys_time = self.sys_time();
         self.update_until(|sim| {
-            if sys_time.abs_diff(sim.sys_time()).as_secs() > MAX_WAIT_TIME_SEC {
-                panic!("RAD did not activate radiation relay after ~{MAX_WAIT_TIME_SEC}s");
+            if sys_time.abs_diff(sim.sys_time()) > MAX_WAIT_TIME_SEC {
+                panic!("RAD did not activate radiation relay after ~{MAX_WAIT_TIME_SEC:?}");
             }
             sim.radiation_relay() == OutputState::On
         });
@@ -169,8 +168,8 @@ impl Sim {
                 sim.set_radiation_state(RadiationState::Deactive);
             }
 
-            if sys_time.abs_diff(sim.sys_time()).as_secs() > MAX_WAIT_TIME_SEC {
-                panic!("RAD did go back to 'idle' after ~{MAX_WAIT_TIME_SEC}s");
+            if sys_time.abs_diff(sim.sys_time()) > MAX_WAIT_TIME_SEC {
+                panic!("RAD did go back to 'idle' after ~{MAX_WAIT_TIME_SEC:?}");
             }
 
             sim.actual_mode() == RadMode::Idle
@@ -302,7 +301,7 @@ impl Sim {
     pub fn wait_update(&mut self) {
         self.update();
 
-        self.wait(Duration::from_millis(UPDATE_DELAY_MS)); // make sure RAD device received the update
+        self.wait(UPDATE_DELAY_MS); // make sure RAD device received the update
 
         self.update();
     }

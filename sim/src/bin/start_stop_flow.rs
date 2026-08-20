@@ -1,7 +1,7 @@
 #![no_main]
 #![no_std]
 
-use core::{ops::ControlFlow, time::Duration};
+use core::ops::ControlFlow;
 
 use sim::{self as _, RadMode, Sim, UPDATE_DELAY_MS};
 
@@ -22,7 +22,7 @@ fn main() -> ! {
     defmt::info!("Starting RAD operation");
     sim.rad_to_production();
 
-    sim.wait(Duration::from_millis(UPDATE_DELAY_MS));
+    sim.wait(UPDATE_DELAY_MS);
 
     defmt::info!("Stopping RAD operation");
     sim.rad_to_idle();
