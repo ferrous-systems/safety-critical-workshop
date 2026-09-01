@@ -1,5 +1,3 @@
-use core::sync::atomic::{self, AtomicUsize};
-
 use mantra_macros::req_test;
 
 use crate::{
