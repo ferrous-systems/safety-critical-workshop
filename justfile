@@ -65,8 +65,8 @@ profraw-file := justfile_directory() + "/target/nextest/default/raw-coverage/pro
 
 rad-unit-tests:
     rm -rf target/nextest/default
-    mkdir -p target/nextest/default/coverage/raw-coverage
-    - RUSTFLAGS="-Cinstrument-coverage" LLVM_PROFILE_FILE="{{ profraw-file }}" cargo nextest run -p rad --lib --target=host-tuple --no-default-features
+    mkdir -p target/nextest/default/coverage/
+    - RUSTFLAGS="-Cinstrument-coverage" LLVM_PROFILE_FILE="{{ profraw-file }}" cargo nextest run -p rad --lib --target=thumbv7em-ferrocene.facade-eabi --no-default-features
     grcov . -s . --binary-path ./target -t html -t cobertura-pretty --ignore-not-existing -o ./target/nextest/default/coverage/ --ignore='/**/*' --ignore='target/*'
 
 export EMBSINTH_OUT_DIR := justfile_directory() + "/target"

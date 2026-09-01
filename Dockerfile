@@ -5,7 +5,3 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     qemu-user-static \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
-
-# Default command to verify installation
-CMD ["qemu-arm", "-version"]
-ENTRYPOINT [ "/usr/bin/qemu-arm-static" ]
