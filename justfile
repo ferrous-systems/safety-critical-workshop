@@ -85,6 +85,3 @@ rad-system-tests phase='base':
 
 post-process tests='system-tests':
     embsinth post-process --out $EMBSINTH_OUT_DIR/{{ tests }}/mantra_test_run.json --test-run-name {{ tests }} $EMBSINTH_OUT_DIR/
-
-slides:
-    typst compile --format pdf --font-path assets/fonts --root $PWD docs/slides.typ slides.pdf
