@@ -42,10 +42,10 @@ pub fn init(sim_path: &Path) -> (Connection, Connection) {
         .attach_under_reset(CHIP)
         .expect("Failed to attach to sim target");
 
-    let mut rad_connection = rad_probe
+    let rad_connection = rad_probe
         .flash_once_and_connect(BINARY_DIR.join(RAD_BINARY_NAME))
         .expect("Failed to flash rad binary");
-    let mut sim_connection = sim_probe
+    let sim_connection = sim_probe
         .flash_and_connect(sim_path)
         .expect("Failed flashing to sim target");
 

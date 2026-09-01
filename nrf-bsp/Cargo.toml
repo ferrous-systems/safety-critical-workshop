@@ -1,5 +1,5 @@
 [package]
-name = "nrf-hal"
+name = "nrf-bsp"
 version = "0.1.0"
 edition = "2021"
 
@@ -12,4 +12,9 @@ defmt-rtt = "1.1"
 embassy-time = "0.5"
 embedded-hal = "1.0"
 nb = "1"
-hal = { package = "embassy-nrf", version = "0.11", features = ["nrf52840", "time-driver-rtc1", "unstable-pac", "defmt"] }
+hal = { package = "embassy-nrf", version = "0.11", features = [
+    "nrf52840",
+    "time-driver-rtc1",
+    "unstable-pac",
+    "defmt",
+] }

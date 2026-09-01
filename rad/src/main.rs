@@ -9,7 +9,7 @@ use mantra_macros::satisfy_req;
 #[cfg(feature = "hw")]
 #[cortex_m_rt::entry]
 fn main() -> ! {
-    let mut board = satisfy_req!("rad.sw.hal" => nrf_hal::Board::init().unwrap());
+    let mut board = satisfy_req!("rad.sw.hal" => nrf_bsp::Board::init().unwrap());
     let mut rad = rad::Rad::init();
 
     //board.print_io();
@@ -33,7 +33,7 @@ fn main() -> ! {
 #[panic_handler]
 fn panic(info: &core::panic::PanicInfo) -> ! {
     defmt::error!("{}", defmt::Display2Format(info));
-    nrf_hal::fail();
+    nrf_bsp::fail();
 }
 
 #[cfg(feature = "hw")]
@@ -42,7 +42,7 @@ fn panic(info: &core::panic::PanicInfo) -> ! {
 #[exception]
 unsafe fn HardFault(_ef: &cortex_m_rt::ExceptionFrame) -> ! {
     defmt::error!("HardFault!");
-    nrf_hal::fail()
+    nrf_bsp::fail()
 }
 
 #[cfg(feature = "hw")]
@@ -50,11 +50,11 @@ unsafe fn HardFault(_ef: &cortex_m_rt::ExceptionFrame) -> ! {
 #[cfg(feature = "hw")]
 #[defmt::panic_handler]
 fn defmt_panic() -> ! {
-    nrf_hal::fail();
+    nrf_bsp::fail();
 }
 
 #[cfg(feature = "hw")]
-defmt::timestamp!("{=u64:tus}", nrf_hal::uptime_us());
+defmt::timestamp!("{=u64:tus}", nrf_bsp::uptime_us());
 
 #[cfg(not(feature = "hw"))]
 fn main() {}

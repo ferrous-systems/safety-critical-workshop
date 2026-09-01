@@ -95,7 +95,7 @@ criticalup link create
   - p1.07: Confirmation Switch
     - Low: Closed
     - High: Open
-  - p1.08: Radiation Sensor (TODO: replace with analog input)
+  - p1.08: Radiation Sensor
     - Low: Deactive
     - High: Active
 - LEDS

@@ -1,3 +1,5 @@
+use core::time::Duration;
+
 use mantra_macros::{req, req_link};
 #[cfg(test)]
 use mockall::automock;
@@ -54,6 +56,8 @@ pub trait Hal {
     fn set_radiation_output_indicator(&mut self, indicator: LedIndicator);
 
     fn set_start_stop_indicator(&mut self);
+
+    fn sys_time(&self) -> Duration;
 }
 
 #[cfg(feature = "hw")]
@@ -67,7 +71,7 @@ macro_rules! led_ctrl {
 }
 
 #[cfg(feature = "hw")]
-impl Hal for nrf_hal::Board {
+impl Hal for nrf_bsp::Board {
     #[req_link("rad.hw.start-stop-switch")]
     fn start_requested(&self) -> bool {
         self.dig_in.p1_05.is_low()
@@ -147,5 +151,9 @@ impl Hal for nrf_hal::Board {
         } else {
             self.dig_out.p1_03.set_high();
         }
+    }
+
+    fn sys_time(&self) -> Duration {
+        self.sys_time()
     }
 }

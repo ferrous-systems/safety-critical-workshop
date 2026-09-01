@@ -9,6 +9,9 @@ base:
 phase-one:
     just test phase-one
 
+phase-two:
+    just test phase-two
+
 test phase='base':
     just rad-unit-tests
     just rad-system-tests {{ phase }}
@@ -33,6 +36,14 @@ sim-build-invariant-check:
 [working-directory("sim")]
 sim-invariant-check:
     DEFMT_LOG=info cargo run --bin invariant_check --no-default-features
+
+[working-directory("sim")]
+sim-build-limit-radiation:
+    DEFMT_LOG=info cargo build --bin limit_radiation
+
+[working-directory("sim")]
+sim-limit-radiation:
+    DEFMT_LOG=info cargo run --bin limit_radiation --no-default-features
 
 [working-directory("sim")]
 sim-reset:
@@ -63,12 +74,13 @@ export EMBSINTH_OUT_DIR := justfile_directory() + "/target"
 [working-directory("system-tests")]
 rad-system-tests phase='base':
     rm -rf $EMBSINTH_OUT_DIR/system-tests
-    just rad-build {{ if phase == "phase-one" { "hw-auto-testing,phase-one" } else { "hw-auto-testing" } }}
+    just rad-build {{ if phase == "phase-one" { "hw-auto-testing,phase-one" } else if phase == "phase-two" { "hw-auto-testing,phase-two" } else { "hw-auto-testing" } }}
     just sim-build-reset
     just sim-build-start-stop
     just sim-build-invariant-check
+    just sim-build-limit-radiation
     # "-j=1" is important for cargo-nextest, because it otherwise uses multiply processes to run tests in parallel
-    RUST_LOG=probe_rs=warn,tracing=warn,info cargo nextest run -j=1 --target=host-tuple {{ if phase == "phase-one" { "--features=phase-one" } else { "" } }}
+    RUST_LOG=probe_rs=warn,tracing=warn,info cargo nextest run -j=1 --target=host-tuple {{ if phase == "phase-one" { "--features=phase-one" } else if phase == "phase-two" { "--features=phase-two" } else { "" } }}
     just post-process
 
 post-process tests='system-tests':
