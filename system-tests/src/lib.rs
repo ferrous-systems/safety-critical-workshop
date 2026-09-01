@@ -5,6 +5,11 @@ use std::{
 
 use embsinth::{connection::Connection, probe::AttachedProbe};
 
+/// Serial number of the debug probe attached to the RAD device
+const RAD_PROBE_SER_NR: &str = "001050272949";
+/// Serial number of the debug probe attached to the SIM device
+const SIM_PROBE_SER_NR: &str = "001050286871";
+
 pub static WORKSPACE_DIR: LazyLock<PathBuf> = LazyLock::new(|| {
     let crate_dir =
         PathBuf::from(std::env::var("CARGO_MANIFEST_DIR").expect("Tests must be run via cargo"));
@@ -19,14 +24,14 @@ pub const RAD_BINARY_NAME: &str = "rad";
 pub const CHIP: &str = "nRF52840_xxAA";
 
 pub fn attach_rad_probe() -> AttachedProbe {
-    embsinth::probe::ProbeId::with_serial_nr(0x1366, 0x1051, "001050272949")
+    embsinth::probe::ProbeId::with_serial_nr(0x1366, 0x1051, RAD_PROBE_SER_NR)
         .attach_under_reset(CHIP)
         .expect("Failed to attach to rad target")
 }
 
 pub fn init(sim_path: &Path) -> (Connection, Connection) {
     let rad_probe = attach_rad_probe();
-    let sim_probe_id = embsinth::probe::ProbeId::with_serial_nr(0x1366, 0x1051, "001050286871");
+    let sim_probe_id = embsinth::probe::ProbeId::with_serial_nr(0x1366, 0x1051, SIM_PROBE_SER_NR);
 
     {
         let sim_reset = sim_probe_id

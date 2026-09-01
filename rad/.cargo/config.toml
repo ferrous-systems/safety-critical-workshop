@@ -5,15 +5,16 @@ runner = [
   "probe-rs",
   "run",
   "--chip=nRF52840_xxAA",
-  "--probe=1366:1051:001050272949",
+  "--probe=1366:1051:001050272949", # <- change the serial number to match the attached probe
   "--allow-erase-all",
-  "--log-format=oneline"
+  "--log-format=oneline",
 ]
 
 rustflags = [
-  "-C", "link-arg=-Tlink.x", # use the cortex-m-rt linker script
-  "-C", "linker=flip-link", # adds stack overflow protection
-  "-C", "link-arg=-Tdefmt.x", # defmt support
+  "-C",
+  "link-arg=-Tlink.x",  # use the cortex-m-rt linker script
+  "-C",
+  "link-arg=-Tdefmt.x", # defmt support
 ]
 
 [build]
