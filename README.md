@@ -6,6 +6,7 @@ This repository contains the accompanying demo for the "Safety-Critical Rust Dev
 
 - `cargo install mantra --locked`
 - `cargo install nextest --locked`
+- `cargo install embsinth --locked`
 - Docker installed and usable
 
 ## Building the docker container

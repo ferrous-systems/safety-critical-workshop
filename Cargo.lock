@@ -1040,8 +1040,9 @@ dependencies = [
 
 [[package]]
 name = "embsinth"
-version = "0.1.0"
-source = "git+https://github.com/mhatzl/embsinth#676305b9bb61b22c358a3b6593d6204f4e49ddea"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "abbae4e0f46c4f6f34a13338786b5985c5016d535d53715c9d17c8297cbb7a95"
 dependencies = [
  "anyhow",
  "clap",
@@ -1065,8 +1066,9 @@ dependencies = [
 
 [[package]]
 name = "embsinth-procm"
-version = "0.1.0"
-source = "git+https://github.com/mhatzl/embsinth#676305b9bb61b22c358a3b6593d6204f4e49ddea"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d27cc1231ab99746c8fb9bfe40ed28bb6bd0486d66537172ca293f61243908d3"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1813,8 +1815,9 @@ dependencies = [
 
 [[package]]
 name = "mantra-macros"
-version = "0.8.0"
-source = "git+https://github.com/mhatzl/mantra#f295cb88b9cc5126759b65f19e446af633783271"
+version = "0.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "380017593a9b554869fa1934fa38ec15cab345a527b61ccd9c2b6ffc4c65ca88"
 dependencies = [
  "defmt",
  "log",
@@ -1824,8 +1827,9 @@ dependencies = [
 
 [[package]]
 name = "mantra-procm"
-version = "0.8.0"
-source = "git+https://github.com/mhatzl/mantra#f295cb88b9cc5126759b65f19e446af633783271"
+version = "0.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cbc4786aa6ae4f447c248b5bfebf743df319682b8f87b62a3d68249bbaa36f10"
 dependencies = [
  "quote",
  "syn 2.0.119",
@@ -1833,9 +1837,9 @@ dependencies = [
 
 [[package]]
 name = "mantra-schema"
-version = "0.8.0"
+version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "893e084b4e77021384e8fb5c26884084de4dc6ce1dcf40b1419ffed733457683"
+checksum = "304c026250ae9c403229869971de69f546257565999c35cd8db42a3665bd4298"
 dependencies = [
  "base16ct",
  "relative-path",
