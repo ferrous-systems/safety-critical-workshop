@@ -4,29 +4,29 @@ use core::time::Duration;
 
 use cortex_m_rt::exception;
 use mantra_macros::req_link;
-use nrf_hal::Board;
+use nrf_bsp::Board;
 
 /// Our custom panic handler.
 #[panic_handler]
 fn panic(info: &core::panic::PanicInfo) -> ! {
     defmt::error!("{}", defmt::Display2Format(info));
-    nrf_hal::fail();
+    nrf_bsp::fail();
 }
 
 /// The default HardFault handler just spins, so replace it.
 #[exception]
 unsafe fn HardFault(_ef: &cortex_m_rt::ExceptionFrame) -> ! {
     defmt::error!("HardFault!");
-    nrf_hal::fail();
+    nrf_bsp::fail();
 }
 
 // this prevents the panic message being printed *twice* when `defmt::panic!` is invoked
 #[defmt::panic_handler]
 fn defmt_panic() -> ! {
-    nrf_hal::fail();
+    nrf_bsp::fail();
 }
 
-defmt::timestamp!("{=u64:tus}", nrf_hal::uptime_us());
+defmt::timestamp!("{=u64:tus}", nrf_bsp::uptime_us());
 
 /// Duration on how long the simulation waits to detect input updates.
 pub const UPDATE_DELAY: Duration = Duration::from_millis(50);

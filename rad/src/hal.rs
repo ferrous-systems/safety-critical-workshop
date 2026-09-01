@@ -71,7 +71,7 @@ macro_rules! led_ctrl {
 }
 
 #[cfg(feature = "hw")]
-impl Hal for nrf_hal::Board {
+impl Hal for nrf_bsp::Board {
     #[req_link("rad.hw.start-stop-switch")]
     fn start_requested(&self) -> bool {
         self.dig_in.p1_05.is_low()

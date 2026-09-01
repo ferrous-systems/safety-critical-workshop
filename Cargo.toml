@@ -1,6 +1,6 @@
 [workspace]
 resolver = "3"
-members = ["nrf-hal", "rad", "sim", "system-tests"]
+members = ["nrf-bsp", "rad", "sim", "system-tests"]
 
 [workspace.dependencies]
 anyhow = "1"

@@ -51,5 +51,5 @@ fn main() -> ! {
 
     defmt::info!("RAD limit-radiation done -> exiting");
 
-    nrf_hal::exit()
+    nrf_bsp::exit()
 }

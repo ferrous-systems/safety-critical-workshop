@@ -1972,7 +1972,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "nrf-hal"
+name = "nrf-bsp"
 version = "0.1.0"
 dependencies = [
  "cortex-m",
@@ -2377,7 +2377,7 @@ dependencies = [
  "mantra-macros",
  "mockall",
  "mockall_double",
- "nrf-hal",
+ "nrf-bsp",
 ]
 
 [[package]]
@@ -2778,7 +2778,7 @@ dependencies = [
  "cortex-m-rt",
  "defmt",
  "mantra-macros",
- "nrf-hal",
+ "nrf-bsp",
 ]
 
 [[package]]

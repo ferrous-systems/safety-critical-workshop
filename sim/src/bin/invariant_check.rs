@@ -34,5 +34,5 @@ fn main() -> ! {
 
     defmt::info!("RAD invariant flow done -> exiting");
 
-    nrf_hal::exit()
+    nrf_bsp::exit()
 }

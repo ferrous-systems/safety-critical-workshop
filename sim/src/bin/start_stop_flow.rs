@@ -22,5 +22,5 @@ fn main() -> ! {
 
     defmt::info!("RAD start/stop flow done -> exiting");
 
-    nrf_hal::exit()
+    nrf_bsp::exit()
 }

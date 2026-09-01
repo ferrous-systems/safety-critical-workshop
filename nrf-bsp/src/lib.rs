@@ -572,7 +572,7 @@ pub fn exit() -> ! {
         const USBD_USBPULLUP: *mut u32 = 0x4002_7504 as *mut u32;
         USBD_USBPULLUP.write_volatile(0)
     }
-    defmt::println!("`nrf_hal::exit()` called; exiting ...");
+    defmt::println!("`nrf_bsp::exit()` called; exiting ...");
     // force any pending memory operation to complete before the instruction that follows
     atomic::compiler_fence(Ordering::SeqCst);
     loop {
@@ -590,7 +590,7 @@ pub fn fail() -> ! {
         const USBD_USBPULLUP: *mut u32 = 0x4002_7504 as *mut u32;
         USBD_USBPULLUP.write_volatile(0)
     }
-    defmt::println!("`nrf_hal::fail()` called; exiting ...");
+    defmt::println!("`nrf_bsp::fail()` called; exiting ...");
     // force any pending memory operation to complete before the instruction that follows
     atomic::compiler_fence(Ordering::SeqCst);
     loop {
