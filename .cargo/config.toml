@@ -33,7 +33,9 @@ runner = [
 #         --init `
 #         --rm `
 #         --mount "type=bind,source=$HOME,target=$linuxHome" `
+#         -e LLVM_PROFILE_FILE=$env:LLVM_PROFILE_FILE `
 #         ubuntu-qemu-arm `
+#         qemu-arm-static `
 #         "$linuxExe" @programArgs
 
 #     exit $LASTEXITCODE
