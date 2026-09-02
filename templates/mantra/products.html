@@ -1,0 +1,60 @@
+{% extends "base-layout.html" %}
+{% import 'macros.html' as m %}
+
+{% block title %}Traceability overview{% endblock %}
+{% block subtitle %}Overview{% endblock %}
+
+{% block content %}
+<h1>Traceability overview</h1>
+<p class="subtitle">
+  Requirements, their traces into the sources, and the evidence that verifies
+  them, collected by mantra.
+</p>
+
+{{ m.requirement_summary(schema.summary.requirements) }}
+
+<h2>Test cases and reviews</h2>
+{{ m.side_summary(schema.summary.test_cases, schema.summary.reviews) }}
+
+<h2>Products</h2>
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th data-sort="text">ID</th>
+        <th data-sort="text">Name</th>
+        <th data-sort="text">Base</th>
+        <th data-sort="text">Version</th>
+        <th>Repository</th>
+        <th>License</th>
+        <th>Pages</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for product in schema.products %}
+      <tr>
+        <td class="req-id">
+          <a href="{{ path_to_root }}/{{ product_url_path(product.id) }}.html"
+            >{{ product.id }}</a
+          >
+        </td>
+        <td>{{ product.name }}</td>
+        <td>{% if product.base %}<code>{{ product.base }}</code>{% else %}<span class="empty">—</span>{% endif %}</td>
+        <td>{% if product.version %}{{ product.version }}{% else %}<span class="empty">—</span>{% endif %}</td>
+        <td>
+          {% if product.repository %}<a href="{{ product.repository }}">{{ product.repository }}</a>{% else %}<span class="empty">—</span>{% endif %}
+        </td>
+        <td>{% if product.license %}{{ product.license }}{% else %}<span class="empty">—</span>{% endif %}</td>
+        <td>
+          <div class="cell-list">
+            <a href="{{ path_to_root }}/{{ product_url_path(product.id) }}/evidence-matrix.html">evidence matrix</a>
+            <a href="{{ path_to_root }}/{{ product_url_path(product.id) }}/requirements.html">requirements</a>
+            <a href="{{ path_to_root }}/{{ product_url_path(product.id) }}/reviews.html">reviews</a>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

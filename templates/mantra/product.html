@@ -1,0 +1,95 @@
+{% extends "base-layout.html" %}
+{% import 'macros.html' as m %}
+
+{% block title %}{{ schema.id }}{% endblock %}
+{% block subtitle %}{{ schema.name }}{% endblock %}
+
+{% block content %}
+<div class="breadcrumb">
+  <a href="{{ path_to_root }}/index.html">report</a>
+  <span class="sep">/</span>
+  <span>{{ schema.id }}</span>
+</div>
+<h1>{{ schema.name }}</h1>
+<p class="subtitle">Collected {{ schema.last_collected_date }}</p>
+
+{{ m.requirement_summary(schema.summary.requirements) }}
+
+<h2>Test cases and reviews</h2>
+{{ m.side_summary(schema.summary.test_cases, schema.summary.reviews) }}
+
+<h2>Metadata</h2>
+<dl class="meta">
+  <dt>ID</dt>
+  <dd class="mono">{{ schema.id }}</dd>
+  <dt>Baseline</dt>
+  <dd>{% if schema.base %}<code>{{ schema.base }}</code>{% else %}<span class="empty">—</span>{% endif %}</dd>
+  <dt>Version</dt>
+  <dd>{% if schema.version %}{{ schema.version }}{% else %}<span class="empty">—</span>{% endif %}</dd>
+  <dt>Homepage</dt>
+  <dd>{% if schema.homepage %}<a href="{{ schema.homepage }}">{{ schema.homepage }}</a>{% else %}<span class="empty">—</span>{% endif %}</dd>
+  <dt>Repository</dt>
+  <dd>{% if schema.repository %}<a href="{{ schema.repository }}">{{ schema.repository }}</a>{% else %}<span class="empty">—</span>{% endif %}</dd>
+  <dt>License</dt>
+  <dd>{% if schema.license %}{{ schema.license }}{% else %}<span class="empty">—</span>{% endif %}</dd>
+</dl>
+
+{% if schema.description %}
+<h2>Description</h2>
+<div class="prose" data-md>{{ schema.description }}</div>
+{% endif %}
+
+<h2>Root requirements</h2>
+<div class="stack">
+  {% for req in schema.root_requirements %}
+  <span class="pill">{{ m.req_link(req, path_to_root) }}</span>
+  {% endfor %}
+</div>
+<p style="margin-top: 1rem">
+  <a href="{{ path_to_root }}/{{ product_url_path(schema.id) }}/evidence-matrix.html">Evidence matrix</a>
+  ·
+  <a href="{{ path_to_root }}/{{ product_url_path(schema.id) }}/requirements.html">All requirements</a>
+</p>
+
+<h2>Reviews</h2>
+{% if schema.reviews %}
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr><th data-sort="text">Date</th><th data-sort="text">Review</th></tr>
+    </thead>
+    <tbody>
+      {% for review in schema.reviews %}
+      <tr>
+        <td class="mono">{{ review.utc_date }}</td>
+        <td><a href="{{ path_to_root }}/{{ review_url_path(review) }}.html">{{ review.name }}</a></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<p class="empty">No reviews collected.</p>
+{% endif %}
+
+<h2>Test runs</h2>
+{% if schema.root_test_runs %}
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr><th data-sort="text">Date</th><th data-sort="text">Test run</th></tr>
+    </thead>
+    <tbody>
+      {% for test_run in schema.root_test_runs %}
+      <tr>
+        <td class="mono">{{ test_run.utc_date }}</td>
+        <td><a href="{{ path_to_root }}/{{ test_run_url_path(test_run) }}.html">{{ test_run.name }}</a></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<p class="empty">No test runs collected.</p>
+{% endif %}
+{% endblock %}

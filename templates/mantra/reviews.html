@@ -1,0 +1,52 @@
+{% extends "base-layout.html" %}
+{% import 'macros.html' as m %}
+
+{% block title %}Reviews — {{ schema.product.id }}{% endblock %}
+{% block subtitle %}Reviews{% endblock %}
+
+{% block content %}
+<div class="breadcrumb">
+  <a href="{{ path_to_root }}/index.html">report</a>
+  <span class="sep">/</span>
+  <a href="{{ path_to_root }}/{{ product_url_path(schema.product.id) }}.html">{{ schema.product.id }}</a>
+  <span class="sep">/</span>
+  <span>reviews</span>
+</div>
+<h1>Reviews</h1>
+<p class="subtitle">
+  Manual verification records. A review is obsolete once the requirements it
+  accepted have changed.
+</p>
+
+<div class="grid">
+  {{ m.metric("Reviews", schema.reviews.summary.total, "collected") }}
+  {{ m.metric("Valid", schema.reviews.summary.valid.cnt, (schema.reviews.summary.valid.percentage | round(1)) ~ "% of reviews") }}
+  {{ m.metric("Obsolete", schema.reviews.summary.obsolete.cnt, "need re-review") }}
+</div>
+
+<h2>All reviews</h2>
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th data-sort="text">Review</th>
+        <th data-sort="text">State</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for review in schema.reviews.obsolete %}
+      <tr>
+        <td><a href="{{ path_to_root }}/{{ review_url_path(review) }}.html">{{ review.name }}</a></td>
+        <td><span class="badge state-{{ review.state }}">{{ review.state }}</span></td>
+      </tr>
+      {% endfor %}
+      {% for review in schema.reviews.valid %}
+      <tr>
+        <td><a href="{{ path_to_root }}/{{ review_url_path(review) }}.html">{{ review.name }}</a></td>
+        <td><span class="badge state-{{ review.state }}">{{ review.state }}</span></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

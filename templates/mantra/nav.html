@@ -1,0 +1,63 @@
+{#
+  Sidebar navigation. `nav_item` is the entry point base-layout.html calls.
+#}
+{% macro nav_item(nav, path_to_root) -%}
+<nav>
+  <div class="nav-group">
+    <div class="nav-title">Report</div>
+    <a class="nav-link" href="{{ path_to_root }}/index.html">Overview</a>
+  </div>
+
+  {% for p in nav.products %}
+  <div class="nav-group">
+    <div class="nav-title">{{ p.product.name }}</div>
+    <a
+      class="nav-link"
+      href="{{ path_to_root }}/{{ product_url_path(p.product.id) }}.html"
+      >Product summary</a
+    >
+    <a
+      class="nav-link"
+      href="{{ path_to_root }}/{{ product_url_path(p.product.id) }}/evidence-matrix.html"
+      >Evidence matrix</a
+    >
+    <a
+      class="nav-link"
+      href="{{ path_to_root }}/{{ product_url_path(p.product.id) }}/requirements.html"
+      >Requirements</a
+    >
+    {% for req in p.root_requirements %}
+    <a
+      class="nav-link nav-link--nested"
+      href="{{ path_to_root }}/{{ requirement_url_path(req) }}.html"
+      >{{ req.id }}</a
+    >
+    {% endfor %}
+    <a
+      class="nav-link"
+      href="{{ path_to_root }}/{{ product_url_path(p.product.id) }}/reviews.html"
+      >Reviews</a
+    >
+    {% for review in p.reviews %}
+    <a
+      class="nav-link nav-link--nested"
+      href="{{ path_to_root }}/{{ review_url_path(review) }}.html"
+      >{{ review.name }}</a
+    >
+    {% endfor %}
+    <a
+      class="nav-link"
+      href="{{ path_to_root }}/{{ product_url_path(p.product.id) }}/test-runs.html"
+      >Test runs</a
+    >
+    {% for test_run in p.root_test_runs %}
+    <a
+      class="nav-link nav-link--nested"
+      href="{{ path_to_root }}/{{ test_run_url_path(test_run) }}.html"
+      >{{ test_run.name }}</a
+    >
+    {% endfor %}
+  </div>
+  {% endfor %}
+</nav>
+{%- endmacro %}

@@ -1,0 +1,86 @@
+{% extends "base-layout.html" %}
+{% import 'macros.html' as m %}
+
+{% block title %}Requirements — {{ schema.product.id }}{% endblock %}
+{% block subtitle %}Requirements{% endblock %}
+
+{% macro row(req, path_to_root) -%}
+{% set depth = req.id | split('.') | list | length %}
+<tr data-state="{{ req.state }}" data-depth="{{ depth }}" data-optional="{{ 'yes' if req.optional else 'no' }}">
+  <td class="req-id">
+    <span style="display: inline-block; width: {{ (depth - 1) * 1.1 }}rem"></span
+    ><a href="{{ path_to_root }}/{{ requirement_url_path(req) }}.html">{{ req.id }}</a>
+  </td>
+  <td><span class="badge state-{{ req.state }}">{{ req.state }}</span></td>
+  <td class="num">{{ depth }}</td>
+  <td>{% if req.optional %}<span class="badge badge--info">optional</span>{% else %}<span class="empty">mandatory</span>{% endif %}</td>
+</tr>
+{%- endmacro %}
+
+{% block content %}
+<div class="breadcrumb">
+  <a href="{{ path_to_root }}/index.html">report</a>
+  <span class="sep">/</span>
+  <a href="{{ path_to_root }}/{{ product_url_path(schema.product.id) }}.html">{{ schema.product.id }}</a>
+  <span class="sep">/</span>
+  <span>requirements</span>
+</div>
+<h1>Requirements</h1>
+<p class="subtitle">
+  Every requirement collected for <code>{{ schema.product.id }}</code>, by
+  state. Level is the depth of the dotted identifier — level 1 is a root
+  requirement.
+</p>
+
+{{ m.requirement_summary(schema.requirements.summary) }}
+
+<h2>All requirements</h2>
+<div data-table data-noun="requirements" data-sort-default="0">
+  <div class="toolbar">
+    <label class="search">
+      <input
+        type="search"
+        data-role="search"
+        placeholder="Filter by identifier…"
+        aria-label="Filter requirements"
+      />
+      <kbd>/</kbd>
+    </label>
+    <div class="chips">
+      <button class="chip" type="button" data-facet="state" data-value="verified" aria-pressed="false">verified <span class="chip__count"></span></button>
+      <button class="chip" type="button" data-facet="state" data-value="unverified" aria-pressed="false">unverified <span class="chip__count"></span></button>
+      <button class="chip" type="button" data-facet="state" data-value="failed" aria-pressed="false">failed <span class="chip__count"></span></button>
+      <button class="chip" type="button" data-facet="state" data-value="skipped" aria-pressed="false">skipped <span class="chip__count"></span></button>
+      <button class="chip" type="button" data-facet="state" data-value="deprecated" aria-pressed="false">deprecated <span class="chip__count"></span></button>
+      <button class="chip" type="button" data-facet="state" data-value="excluded" aria-pressed="false">excluded <span class="chip__count"></span></button>
+      <button class="chip" type="button" data-facet="depth" data-value="1" aria-pressed="false">level 1 <span class="chip__count"></span></button>
+      <button class="chip" type="button" data-facet="depth" data-value="2" aria-pressed="false">level 2 <span class="chip__count"></span></button>
+      <button class="chip" type="button" data-facet="depth" data-value="3" aria-pressed="false">level 3 <span class="chip__count"></span></button>
+    </div>
+    <button class="btn" type="button" data-role="reset">Reset</button>
+    <span class="result-count" data-role="count"></span>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th data-sort="text">Requirement</th>
+          <th data-sort="text">State</th>
+          <th data-sort="number">Level</th>
+          <th data-sort="text">Obligation</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for req in schema.requirements.failed %}{{ row(req, path_to_root) }}{% endfor %}
+        {% for req in schema.requirements.skipped %}{{ row(req, path_to_root) }}{% endfor %}
+        {% for req in schema.requirements.verified %}{{ row(req, path_to_root) }}{% endfor %}
+        {% for req in schema.requirements.unverified %}{{ row(req, path_to_root) }}{% endfor %}
+        {% for req in schema.requirements.deprecated %}{{ row(req, path_to_root) }}{% endfor %}
+        {% for req in schema.requirements.excluded %}{{ row(req, path_to_root) }}{% endfor %}
+      </tbody>
+    </table>
+    <div class="table-empty">No requirement matches the current filter.</div>
+  </div>
+</div>
+{% endblock %}

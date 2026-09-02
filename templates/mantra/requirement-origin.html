@@ -1,0 +1,16 @@
+{#
+  Where a requirement is defined. Rendered as a `meta` definition-list entry;
+  links into the repository when the product declares one.
+#}
+{% macro origin_listitem(product, base_origin, origin) -%}
+{% if base_origin.file and origin.line %}
+<dt>Origin</dt>
+<dd class="mono">
+  {% if product.repository and product.base %}
+  <a href="{{ product.repository }}/blob/{{ product.base }}/{{ base_origin.file }}#L{{ origin.line }}"
+    >{{ base_origin.file }}:{{ origin.line }}</a
+  >
+  {% else %}{{ base_origin.file }}:{{ origin.line }}{% endif %}
+</dd>
+{% endif %}
+{%- endmacro %}

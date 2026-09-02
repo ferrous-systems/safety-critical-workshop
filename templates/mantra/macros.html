@@ -1,0 +1,82 @@
+{#
+  Shared building blocks. Not a mantra template name — imported by the page
+  templates in this directory.
+#}
+
+{# Ring gauge. `pct` is 0-100, `caption` labels what is being measured. #}
+{% macro gauge(pct, caption) -%}
+{% set circumference = 326.73 %}
+<div class="gauge">
+  <svg width="120" height="120" viewBox="0 0 120 120" aria-hidden="true">
+    <circle class="gauge__track" cx="60" cy="60" r="52" />
+    <circle
+      class="gauge__value"
+      cx="60"
+      cy="60"
+      r="52"
+      stroke-dasharray="{{ circumference }}"
+      stroke-dashoffset="{{ (circumference - (circumference * pct / 100)) | round(2) }}"
+    />
+  </svg>
+  <div class="gauge__label">
+    <span class="gauge__pct">{{ pct | round(1) }}%</span>
+    <span class="gauge__caption">{{ caption }}</span>
+  </div>
+</div>
+{%- endmacro %}
+
+{# One metric card. #}
+{% macro metric(label, value, note) -%}
+<div class="card">
+  <div class="metric__label">{{ label }}</div>
+  <div class="metric__value">{{ value }}</div>
+  <div class="metric__note">{{ note }}</div>
+</div>
+{%- endmacro %}
+
+{# Stacked bar over the requirement states, which partition the total. #}
+{% macro state_bar(summary) -%}
+<div class="bar" role="img" aria-label="Requirement states">
+  <div class="bar__seg bar__seg--ok" style="width: {{ summary.verified.percentage | round(3) }}%"></div>
+  <div class="bar__seg bar__seg--bad" style="width: {{ summary.failed.percentage | round(3) }}%"></div>
+  <div class="bar__seg bar__seg--warn" style="width: {{ summary.skipped.percentage | round(3) }}%"></div>
+  <div class="bar__seg bar__seg--special" style="width: {{ summary.deprecated.percentage | round(3) }}%"></div>
+  <div class="bar__seg bar__seg--muted" style="width: {{ summary.unverified.percentage | round(3) }}%"></div>
+</div>
+<div class="legend">
+  <span class="l-ok">Verified <b>{{ summary.verified.cnt }}</b></span>
+  <span class="l-bad">Failed <b>{{ summary.failed.cnt }}</b></span>
+  <span class="l-warn">Skipped <b>{{ summary.skipped.cnt }}</b></span>
+  <span class="l-special">Deprecated <b>{{ summary.deprecated.cnt }}</b></span>
+  <span class="l-muted">Unverified <b>{{ summary.unverified.cnt }}</b></span>
+</div>
+{%- endmacro %}
+
+{# Requirement headline: gauge, stacked bar and the metric cards. #}
+{% macro requirement_summary(summary) -%}
+<div class="hero">
+  {{ gauge(summary.verified.percentage, "of requirements verified") }}
+  <div style="flex: 1 1 320px; min-width: 260px">{{ state_bar(summary) }}</div>
+</div>
+<div class="grid">
+  {{ metric("Requirements", summary.total, "collected from the sources") }}
+  {{ metric("Verified", summary.verified.cnt, (summary.verified.percentage | round(1)) ~ "% of all requirements") }}
+  {{ metric("Mandatory verified", summary.mandatory_verified.cnt, summary.mandatory_total.cnt ~ " mandatory in total") }}
+  {{ metric("Manually verified", summary.manuals_verified.cnt, summary.manuals_total.cnt ~ " marked for manual verification") }}
+</div>
+{%- endmacro %}
+
+{# Test-case and review counters, shown next to the requirement summary. #}
+{% macro side_summary(test_cases, reviews) -%}
+<div class="grid">
+  {{ metric("Test cases", test_cases.total, test_cases.passed.cnt ~ " passed, " ~ test_cases.failed.cnt ~ " failed") }}
+  {{ metric("Reviews", reviews.total, reviews.valid.cnt ~ " valid, " ~ reviews.obsolete.cnt ~ " obsolete") }}
+</div>
+{%- endmacro %}
+
+{# Requirement id rendered as a link, with its state and optional badges. #}
+{% macro req_link(req, path_to_root) -%}
+<a class="mono" href="{{ path_to_root }}/{{ requirement_url_path(req) }}.html"
+  >{{ req.id }}</a
+>{% if req.state %}<span class="state-badge state-{{ req.state }}">{{ req.state }}</span>{% endif %}{% if req.optional %}<span class="optional-badge">optional</span>{% endif %}
+{%- endmacro %}

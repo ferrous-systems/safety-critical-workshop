@@ -1,0 +1,191 @@
+{% extends "base-layout.html" %}
+{% import 'macros.html' as m %}
+{% import 'requirement-origin.html' as origin_macros %}
+
+{% block title %}{{ schema.id }}{% endblock %}
+{% block subtitle %}{{ schema.id }}{% endblock %}
+
+{% block content %}
+<div class="breadcrumb">
+  <a href="{{ path_to_root }}/index.html">report</a>
+  <span class="sep">/</span>
+  <a href="{{ path_to_root }}/{{ product_url_path(schema.product.id) }}.html">{{ schema.product.id }}</a>
+  <span class="sep">/</span>
+  <a href="{{ path_to_root }}/{{ product_url_path(schema.product.id) }}/requirements.html">requirements</a>
+  <span class="sep">/</span>
+  <span>{{ schema.id }}</span>
+</div>
+
+<div class="page-title">
+  <h1 class="mono" style="margin: 0">{{ schema.id }}</h1>
+  <span class="badge state-{{ schema.state }}">{{ schema.state }}</span>
+  {% if schema.properties and schema.properties.Status %}<span class="badge badge--warn">status: {{ schema.properties.Status }}</span>{% endif %}
+  {% if schema.manual_verification %}<span class="badge badge--info">manual verification</span>{% endif %}
+  {% if schema.optional %}<span class="badge badge--info">optional</span>{% endif %}
+  {% if schema.deprecated %}<span class="badge badge--special">deprecated</span>{% endif %}
+  {% if schema.excluded %}<span class="badge badge--muted">excluded</span>{% endif %}
+</div>
+<p class="subtitle" style="margin-top: 0.6rem; font-size: 1.05rem; color: var(--text)">
+  {{ schema.title }}
+</p>
+
+<dl class="meta">
+  {# The requirement's own fields, exactly as the Markdown declares them. #}
+  {% if schema.properties %}{% for key, value in schema.properties | items %}
+  <dt>{{ key }}</dt>
+  <dd>{{ value }}</dd>
+  {% endfor %}{% endif %}
+  <dt>Obligation</dt>
+  <dd>{% if schema.optional %}optional{% else %}mandatory{% endif %}</dd>
+  {# What was found, as opposed to how the requirement asks to be verified. #}
+  <dt>Evidence</dt>
+  <dd>
+    {% if schema.manual_verification %}manual — evidence comes from a review{%
+    elif schema.traces and schema.traces.summary.verifies.cnt > 0 %}traced —
+    {{ schema.traces.summary.verifies.cnt }} verifying trace(s){% else %}no
+    verifying trace and not marked manual{% endif %}
+  </dd>
+  <dt>Product</dt>
+  <dd class="mono">{{ schema.product.id }}</dd>
+  {#origin#}
+    {{ origin_macros.origin_listitem(schema.product, schema.base_origin, schema.origin) }}
+
+</dl>
+
+<h2>Requirement</h2>
+{% if schema.description %}
+<div
+  class="prose"
+  data-md
+  data-req-base="{{ path_to_root }}/{{ product_url_path(schema.product.id) }}/requirements"
+>{{ schema.description }}</div>
+{% else %}
+<p class="empty">No description available.</p>
+{% endif %}
+
+<h2>Position in the hierarchy</h2>
+<dl class="meta">
+  <dt>Parents</dt>
+  <dd>
+    {% if schema.parents %}
+    <div class="stack">
+      {% for parent in schema.parents %}
+      <span class="pill">{{ m.req_link(parent, path_to_root) }}</span>
+      {% endfor %}
+    </div>
+    {% else %}<span class="empty">none — this is a root requirement</span>{% endif %}
+  </dd>
+  <dt>Children</dt>
+  <dd>
+    {% if schema.children %}
+    <div class="stack">
+      {% for child in schema.children %}
+      <span class="pill">{{ m.req_link(child, path_to_root) }}</span>
+      {% endfor %}
+    </div>
+    {% else %}<span class="empty">none — this is a leaf requirement</span>{% endif %}
+  </dd>
+  {% if schema.replaces %}
+  <dt>Replaces</dt>
+  <dd>
+    <div class="stack">
+      {% for req in schema.replaces %}
+      <span class="pill">{{ m.req_link(req, path_to_root) }}</span>
+      {% endfor %}
+    </div>
+  </dd>
+  {% endif %}
+  {% if schema.replaced_by %}
+  <dt>Replaced by</dt>
+  <dd>
+    <div class="stack">
+      {% for req in schema.replaced_by %}
+      <span class="pill">{{ m.req_link(req, path_to_root) }}</span>
+      {% endfor %}
+    </div>
+  </dd>
+  {% endif %}
+</dl>
+
+<h2>Traces</h2>
+{% if schema.traces %}
+<div class="grid" style="margin-bottom: 1rem">
+  {{ m.metric("Traces", schema.traces.summary.total, "annotations naming this requirement") }}
+  {{ m.metric("Verifying", schema.traces.summary.verifies.cnt, "tests that verify it") }}
+  {{ m.metric("Satisfying", schema.traces.summary.satisfies.cnt, "code that implements it") }}
+  {{ m.metric("Clarifying", schema.traces.summary.clarifies.cnt, "context, neither of the above") }}
+</div>
+
+<div data-table data-noun="traces">
+  <div class="toolbar">
+    <label class="search">
+      <input type="search" data-role="search" placeholder="Filter by file…" aria-label="Filter traces" />
+      <kbd>/</kbd>
+    </label>
+    <div class="chips">
+      <button class="chip" type="button" data-facet="kind" data-value="satisfies" aria-pressed="false">satisfies <span class="chip__count"></span></button>
+      <button class="chip" type="button" data-facet="kind" data-value="verifies" aria-pressed="false">verifies <span class="chip__count"></span></button>
+      <button class="chip" type="button" data-facet="kind" data-value="clarifies" aria-pressed="false">clarifies <span class="chip__count"></span></button>
+    </div>
+    <button class="btn" type="button" data-role="reset">Reset</button>
+    <span class="result-count" data-role="count"></span>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th data-sort="text">File</th>
+          <th data-sort="number">Line</th>
+          <th data-sort="text">Kind</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for trace in schema.traces.all %}
+        <tr data-kind="{{ trace.kind }}">
+          <td class="mono">
+            {% if schema.product.repository and schema.product.base %}
+            <a href="{{ schema.product.repository }}/blob/{{ schema.product.base }}/{{ trace.filepath }}#L{{ trace.line }}">{{ trace.filepath }}</a>
+            {% else %}{{ trace.filepath }}{% endif %}
+          </td>
+          <td class="num">{{ trace.line }}</td>
+          <td>
+            <span class="badge {% if trace.kind == 'verifies' %}badge--ok{% elif trace.kind == 'satisfies' %}badge--accent{% else %}badge--muted{% endif %}">{{ trace.kind }}</span>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <div class="table-empty">No trace matches the current filter.</div>
+  </div>
+</div>
+{% else %}
+<p class="empty">No trace names this requirement.</p>
+{% endif %}
+
+<h2>Coverage and review</h2>
+<dl class="meta">
+  <dt>Covered by</dt>
+  <dd>
+    {% if schema.covered_by %}
+    <div class="stack">
+      {% for test_run in schema.covered_by.test_runs %}
+      <a href="{{ path_to_root }}/{{ test_run_url_path(test_run) }}.html">{{ test_run.name }}</a>
+      {% endfor %}
+      {% for test_case in schema.covered_by.test_cases %}
+      <a href="{{ path_to_root }}/{{ test_case_url_path(test_case) }}.html">{{ test_case.test_case_name }}</a>
+      {% endfor %}
+    </div>
+    {% else %}<span class="empty">no test run or test case reports covering this requirement</span>{% endif %}
+  </dd>
+  <dt>Reviewed in</dt>
+  <dd>
+    {% if schema.reviewed_in %}
+    <div class="stack">
+      {% for review in schema.reviewed_in %}
+      <a href="{{ path_to_root }}/{{ review_url_path(review) }}.html">{{ review.name }}</a>
+      {% endfor %}
+    </div>
+    {% else %}<span class="empty">not covered by a review</span>{% endif %}
+  </dd>
+</dl>
+{% endblock %}
