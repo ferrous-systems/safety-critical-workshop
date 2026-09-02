@@ -1,0 +1,125 @@
+{% extends "base-layout.html" %}
+{% import 'macros.html' as m %}
+
+{% block title %}Evidence matrix — {{ schema.product.id }}{% endblock %}
+{% block subtitle %}Evidence matrix{% endblock %}
+
+{% block content %}
+<div class="breadcrumb">
+  <a href="{{ path_to_root }}/index.html">report</a>
+  <span class="sep">/</span>
+  <a href="{{ path_to_root }}/{{ product_url_path(schema.product.id) }}.html">{{ schema.product.id }}</a>
+  <span class="sep">/</span>
+  <span>evidence matrix</span>
+</div>
+<h1>Evidence matrix</h1>
+<p class="subtitle">
+  Each requirement against the evidence that discharges it: the children it
+  aggregates from, the test runs and test cases that cover it, and the reviews
+  that accepted it.
+</p>
+
+<div class="note">
+  <strong>What the Evidence column records.</strong> Whether a requirement
+  aggregates from <em>children</em>, is marked for <em>manual</em>
+  verification, is <em>covered</em> by a test run or test case, and whether a
+  <em>review</em> accepted it. Traces from the sources are not part of the
+  matrix — each requirement page lists its own.
+</div>
+
+<div data-table data-noun="requirements" data-sort-default="0">
+  <div class="toolbar">
+    <label class="search">
+      <input
+        type="search"
+        data-role="search"
+        placeholder="Filter by identifier, title or evidence…"
+        aria-label="Filter the evidence matrix"
+      />
+      <kbd>/</kbd>
+    </label>
+    <div class="chips">
+      <button class="chip" type="button" data-facet="state" data-value="verified" aria-pressed="false">verified <span class="chip__count"></span></button>
+      <button class="chip" type="button" data-facet="state" data-value="unverified" aria-pressed="false">unverified <span class="chip__count"></span></button>
+      <button class="chip" type="button" data-facet="state" data-value="failed" aria-pressed="false">failed <span class="chip__count"></span></button>
+      <button class="chip" type="button" data-facet="evidence" data-value="aggregate" aria-pressed="false">aggregate <span class="chip__count"></span></button>
+      <button class="chip" type="button" data-facet="evidence" data-value="manual" aria-pressed="false">manual <span class="chip__count"></span></button>
+      <button class="chip" type="button" data-facet="evidence" data-value="covered" aria-pressed="false">covered <span class="chip__count"></span></button>
+      <button class="chip" type="button" data-facet="evidence" data-value="reviewed" aria-pressed="false">reviewed <span class="chip__count"></span></button>
+      <button class="chip" type="button" data-facet="evidence" data-value="none" aria-pressed="false">nothing recorded <span class="chip__count"></span></button>
+    </div>
+    <button class="btn" type="button" data-role="reset">Reset</button>
+    <span class="result-count" data-role="count"></span>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th data-sort="text">Requirement</th>
+          <th data-sort="text">Title</th>
+          <th data-sort="text">State</th>
+          <th data-sort="text">Evidence</th>
+          <th>Children</th>
+          <th>Covered by</th>
+          <th>Reviewed in</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for req in schema.requirements %}
+        {% set marks = (("aggregate " if req.children else "") ~ ("manual " if req.manual_verification else "") ~ ("covered " if req.covered_by else "") ~ ("reviewed " if req.reviewed_in else "")) | trim %}
+        {% set evidence = "none" if marks == "" else marks %}
+        <tr data-state="{{ req.state }}" data-evidence="{{ evidence }}">
+          <td class="req-id">
+            <a href="{{ path_to_root }}/{{ requirement_url_path(req) }}.html">{{ req.id }}</a>
+          </td>
+          <td>{{ req.title }}</td>
+          <td><span class="badge state-{{ req.state }}">{{ req.state }}</span></td>
+          <td>
+            {% if evidence == "none" %}
+            <span class="badge badge--muted">not recorded</span>
+            {% else %}
+            {% if req.children %}<span class="badge badge--accent">aggregate</span> {% endif %}
+            {% if req.manual_verification %}<span class="badge badge--info">manual</span> {% endif %}
+            {% if req.covered_by %}<span class="badge badge--ok">covered</span> {% endif %}
+            {% if req.reviewed_in %}<span class="badge badge--special">reviewed</span>{% endif %}
+            {% endif %}
+          </td>
+          <td>
+            {% if req.children %}
+            <div class="cell-list">
+              {% for child in req.children %}
+              <a href="{{ path_to_root }}/{{ requirement_url_path(child) }}.html">{{ child.id }}</a>
+              {% endfor %}
+            </div>
+            {% else %}<span class="empty">—</span>{% endif %}
+          </td>
+          <td>
+            {% if req.covered_by %}
+            <div class="cell-list">
+              {% for test_run in req.covered_by.test_runs %}
+              <a href="{{ path_to_root }}/{{ test_run_url_path(test_run) }}.html">{{ test_run.name }}</a>
+              {% endfor %}
+              {% for test_case in req.covered_by.test_cases %}
+              <a href="{{ path_to_root }}/{{ test_case_url_path(test_case) }}.html">{{ test_case.test_case_name }}</a>
+              {% endfor %}
+            </div>
+            {% else %}<span class="empty">—</span>{% endif %}
+          </td>
+          <td>
+            {% if req.reviewed_in %}
+            <div class="cell-list">
+              {% for review in req.reviewed_in %}
+              <a href="{{ path_to_root }}/{{ review_url_path(review) }}.html">{{ review.name }}</a>
+              {% endfor %}
+            </div>
+            {% else %}<span class="empty">—</span>{% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <div class="table-empty">No requirement matches the current filter.</div>
+  </div>
+</div>
+{% endblock %}

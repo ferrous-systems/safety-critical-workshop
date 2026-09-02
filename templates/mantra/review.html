@@ -1,0 +1,245 @@
+{% extends "base-layout.html" %}
+{% import 'macros.html' as m %}
+
+{% block title %}{{ schema.name }}{% endblock %}
+{% block subtitle %}Review{% endblock %}
+
+{% block content %}
+<div class="breadcrumb">
+  <a href="{{ path_to_root }}/index.html">report</a>
+  <span class="sep">/</span>
+  <span>reviews</span>
+  <span class="sep">/</span>
+  <span>{{ schema.name }}</span>
+</div>
+
+<div class="page-title">
+  <h1 style="margin: 0">{{ schema.name }}</h1>
+  <span class="badge state-{{ schema.state }}">{{ schema.state }}</span>
+</div>
+
+<dl class="meta" style="margin-top: 1rem">
+  <dt>Date</dt>
+  <dd class="mono">{{ schema.utc_date }}</dd>
+  <dt>Authors</dt>
+  <dd>{% for author in schema.authors %}{{ author }}{% if not loop.last %}, {% endif %}{% endfor %}</dd>
+  <dt>Requirements</dt>
+  <dd>{% if schema.requirements %}{{ schema.requirements | length }} accepted{% else %}none{% endif %}</dd>
+  <dt>Ignored entries</dt>
+  <dd>{% if schema.ignored_entries %}{{ schema.ignored_entries.total }}{% else %}0{% endif %}</dd>
+</dl>
+
+{% if schema.description %}
+<h2>Scope</h2>
+<div class="prose" data-md>{{ schema.description }}</div>
+{% endif %}
+
+<h2>Accepted requirements</h2>
+{% if schema.requirements %}
+<div data-table data-noun="requirements" data-sort-default="0">
+  <div class="toolbar">
+    <label class="search">
+      <input type="search" data-role="search" placeholder="Filter by identifier or rationale…" aria-label="Filter accepted requirements" />
+      <kbd>/</kbd>
+    </label>
+    <button class="btn" type="button" data-role="reset">Reset</button>
+    <span class="result-count" data-role="count"></span>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th data-sort="text">Requirement</th>
+          <th>Rationale recorded by the reviewer</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for rv in schema.requirements %}
+        <tr>
+          <td class="req-id">
+            <a href="{{ path_to_root }}/{{ requirement_url_path(rv.req) }}.html">{{ rv.req.id }}</a>
+          </td>
+          <td>{{ rv.comment }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <div class="table-empty">No requirement matches the current filter.</div>
+  </div>
+</div>
+{% else %}
+<p class="empty">This review accepts no requirements.</p>
+{% endif %}
+
+<h2>Test result overrides</h2>
+{% if schema.test_run_overrides %}
+{% for tro in schema.test_run_overrides %}
+<h3>
+  <a href="{{ path_to_root }}/{{ test_run_url_path(tro.test_run) }}.html">{{ tro.test_run.name }}</a>
+</h3>
+{% for tco in tro.test_cases %}
+<h4>{{ tco.test_case.test_case_name }}</h4>
+{% if tco.state %}
+<dl class="meta">
+  <dt>New state</dt>
+  <dd><span class="badge state-{{ tco.state.new }}">{{ tco.state.new }}</span></dd>
+  <dt>Old state</dt>
+  <dd><span class="badge state-{{ tco.state.old }}">{{ tco.state.old }}</span></dd>
+  <dt>Comment</dt>
+  <dd>{{ tco.state.comment }}</dd>
+</dl>
+{% else %}
+<p class="empty">State unchanged.</p>
+{% endif %}
+{% if tco.coverage %}
+{% for file in tco.coverage %}
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr><th>{{ file.filepath }}</th><th>New hits</th><th>Old hits</th><th>Comment</th></tr>
+    </thead>
+    <tbody>
+      {% for cl in file.lines %}
+      <tr>
+        <td class="num mono">{{ cl.nr }}</td>
+        <td class="num">{% if cl.new_hits %}{{ cl.new_hits }}{% else %}uncovered{% endif %}</td>
+        <td class="num">{% if cl.old_hits %}{{ cl.old_hits }}{% else %}uncovered{% endif %}</td>
+        <td>{{ cl.comment }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endfor %}
+{% endif %}
+{% endfor %}
+{% if tro.coverage %}
+{% for file in tro.coverage %}
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr><th>{{ file.filepath }}</th><th>New hits</th><th>Old hits</th><th>Comment</th></tr>
+    </thead>
+    <tbody>
+      {% for cl in file.lines %}
+      <tr>
+        <td class="num mono">{{ cl.nr }}</td>
+        <td class="num">{% if cl.new_hits %}{{ cl.new_hits }}{% else %}uncovered{% endif %}</td>
+        <td class="num">{% if cl.old_hits %}{{ cl.old_hits }}{% else %}uncovered{% endif %}</td>
+        <td>{{ cl.comment }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endfor %}
+{% endif %}
+{% endfor %}
+{% else %}
+<p class="empty">None.</p>
+{% endif %}
+
+<h2>Ignored entries</h2>
+{% if schema.ignored_entries %}
+<p class="subtitle">
+  Entries in the review file that no longer match anything collected, and were
+  therefore not applied.
+</p>
+<h3>Requirements</h3>
+<div class="table-wrap">
+  <table>
+    <thead><tr><th>ID</th><th>Comment</th></tr></thead>
+    <tbody>
+      {% for req in schema.ignored_entries.requirements %}
+      <tr><td class="req-id">{{ req.id }}</td><td>{{ req.comment }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<h3>Test case state overrides</h3>
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr><th>Test run</th><th>Date</th><th>Test case</th><th>New state</th><th>Comment</th></tr>
+    </thead>
+    <tbody>
+      {% for ov in schema.ignored_entries.test_case_state_overrides %}
+      <tr>
+        <td>{{ ov.test_run_name }}</td>
+        <td class="mono">{{ ov.test_run_date }}</td>
+        <td>{{ ov.test_case_name }}</td>
+        <td>{{ ov.state }}</td>
+        <td>{{ ov.comment }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<h3>Test case line coverage overrides</h3>
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr><th>Test run</th><th>Date</th><th>Test case</th><th>File</th><th>Line</th><th>New hits</th><th>Comment</th></tr>
+    </thead>
+    <tbody>
+      {% for ov in schema.ignored_entries.test_case_line_coverage_overrides %}
+      <tr>
+        <td>{{ ov.test_run_name }}</td>
+        <td class="mono">{{ ov.test_run_date }}</td>
+        <td>{{ ov.test_case_name }}</td>
+        <td class="mono">{{ ov.cov_filepath }}</td>
+        <td class="num">{{ ov.cov_line }}</td>
+        <td class="num">{% if ov.hits %}{{ ov.hits }}{% else %}uncovered{% endif %}</td>
+        <td>{{ ov.comment }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<h3>Test run line coverage overrides</h3>
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr><th>Test run</th><th>Date</th><th>File</th><th>Line</th><th>New hits</th><th>Comment</th></tr>
+    </thead>
+    <tbody>
+      {% for ov in schema.ignored_entries.test_run_line_coverage_overrides %}
+      <tr>
+        <td>{{ ov.test_run_name }}</td>
+        <td class="mono">{{ ov.test_run_date }}</td>
+        <td class="mono">{{ ov.cov_filepath }}</td>
+        <td class="num">{{ ov.cov_line }}</td>
+        <td class="num">{% if ov.hits %}{{ ov.hits }}{% else %}uncovered{% endif %}</td>
+        <td>{{ ov.comment }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<p class="empty">None.</p>
+{% endif %}
+
+<h2>Revisions</h2>
+{% if schema.revisions %}
+<div class="table-wrap">
+  <table>
+    <thead><tr><th>Nr.</th><th>Authors</th><th>Comment</th></tr></thead>
+    <tbody>
+      {% for revision in schema.revisions %}
+      <tr>
+        <td class="num">{{ revision.nr }}</td>
+        <td>{% for author in revision.authors %}{{ author }}{% if not loop.last %}, {% endif %}{% endfor %}</td>
+        <td>{{ revision.comment }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<p class="empty">None.</p>
+{% endif %}
+{% endblock %}

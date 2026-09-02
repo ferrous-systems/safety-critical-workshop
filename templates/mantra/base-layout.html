@@ -1,0 +1,482 @@
+{#
+  Page shell shared by every report page: topbar, sidebar, content slot, and
+  the client-side behaviour (theme, filtering, sorting, prose rendering).
+
+  Blocks kept compatible with mantra's defaults: title, base_style, header,
+  nav, content. Templates not overridden here still extend this layout.
+#}
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{% block title %}Mantra Report{% endblock %}</title>
+    <script>
+      // Applied before first paint so the page never flashes the wrong theme.
+      (function () {
+        try {
+          var saved = localStorage.getItem("mantra-theme");
+          var dark =
+            saved === "dark" ||
+            (saved === null &&
+              window.matchMedia("(prefers-color-scheme: dark)").matches);
+          if (dark) document.documentElement.setAttribute("data-theme", "dark");
+        } catch (e) {}
+      })();
+    </script>
+    {% block base_style %} {% from 'base-style.html' import base %} {{ base() }}
+    {% endblock %}
+  </head>
+  <body data-root="{{ path_to_root }}">
+    <header class="topbar">
+      {% block header %}
+      <a class="topbar__brand" href="{{ path_to_root }}/index.html">
+        <span class="topbar__mark">mantra</span>
+        <span>Requirements traceability</span>
+      </a>
+      <span class="topbar__sub">{% block subtitle %}{% endblock %}</span>
+      {% endblock %}
+      <span class="topbar__spacer"></span>
+      <button
+        class="btn"
+        id="theme-toggle"
+        type="button"
+        title="Toggle light/dark theme"
+        aria-label="Toggle light/dark theme"
+      >
+        <span id="theme-icon">◐</span><span>Theme</span>
+      </button>
+    </header>
+
+    <div class="shell">
+      <aside class="sidebar">
+        {% block nav %} {% from 'nav.html' import nav_item %} {{ nav_item(nav,
+        path_to_root) }} {% endblock %}
+      </aside>
+      <main class="content">{% block content %}{% endblock %}</main>
+    </div>
+
+    <script>
+      (function () {
+        "use strict";
+
+        /* ---- theme ---------------------------------------------------- */
+
+        var root = document.documentElement;
+        var icon = document.getElementById("theme-icon");
+
+        function paintIcon() {
+          if (icon) {
+            icon.textContent =
+              root.getAttribute("data-theme") === "dark" ? "☾" : "☀";
+          }
+        }
+        paintIcon();
+
+        var toggle = document.getElementById("theme-toggle");
+        if (toggle) {
+          toggle.addEventListener("click", function () {
+            var dark = root.getAttribute("data-theme") === "dark";
+            if (dark) root.removeAttribute("data-theme");
+            else root.setAttribute("data-theme", "dark");
+            try {
+              localStorage.setItem("mantra-theme", dark ? "light" : "dark");
+            } catch (e) {}
+            paintIcon();
+          });
+        }
+
+        /* ---- requirement prose ---------------------------------------- */
+
+        function esc(s) {
+          return s
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;");
+        }
+
+        // Resolve mantra's `[req_link("id")]` markers to report pages.
+        function reqLinks(s, prefix) {
+          if (!prefix) return s;
+          return s.replace(
+            /\[req_link\(&quot;([^&]+?)&quot;\)\]|\[req_link\("([^"]+?)"\)\]/g,
+            function (_m, a, b) {
+              var id = a || b;
+              var href = prefix + "/" + id.split(".").join("/") + ".html";
+              return '<a class="mono" href="' + href + '">' + id + "</a>";
+            },
+          );
+        }
+
+        // Escaping happens here rather than up front so the line lengths the
+        // paragraph heuristic below reads are the source's own.
+        function inline(s, prefix) {
+          s = esc(s);
+          s = s.replace(/`([^`]+)`/g, function (_m, c) {
+            return "<code>" + c + "</code>";
+          });
+          s = reqLinks(s, prefix);
+          s = s.replace(
+            /\[([^\]]+)\]\(([^)\s]+)\)/g,
+            '<a href="$2" rel="noreferrer">$1</a>',
+          );
+          s = s.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+          s = s.replace(/(^|[\s(])\*([^*\n]+)\*/g, "$1<em>$2</em>");
+          return s;
+        }
+
+        // Split a table row on its cell separators. mantra unescapes the `\|`
+        // of the source, so a pipe inside a code span — a Rust operator — must
+        // not be taken for one.
+        function cells(line) {
+          var body = line.replace(/^\||\|$/g, "");
+          var out = [];
+          var cell = "";
+          var code = false;
+          for (var i = 0; i < body.length; i++) {
+            var ch = body.charAt(i);
+            if (ch === "`") code = !code;
+            if (ch === "|" && !code) {
+              out.push(cell.trim());
+              cell = "";
+            } else {
+              cell += ch;
+            }
+          }
+          out.push(cell.trim());
+          return out;
+        }
+
+        // The column the requirement sources are wrapped at, and what the end
+        // of a sentence looks like there.
+        var WRAP = 80;
+        var ENDS_SENTENCE = /[.:!?)"`*\]]$/;
+
+        // A deliberately small Markdown subset: what requirement bodies use.
+        // This renderer and the paragraph recovery below are both workarounds
+        // for mantra behaviour, kept knowingly; xtask/docs/mantra.md records
+        // what each assumes and what would retire it.
+        function render(text, prefix) {
+          var lines = text.split("\n");
+          var out = [];
+          var para = [];
+          var list = null;
+
+          function flushPara() {
+            if (para.length) {
+              out.push("<p>" + inline(para.join(" "), prefix) + "</p>");
+              para = [];
+            }
+          }
+          function flushList() {
+            if (list) {
+              out.push("</" + list + ">");
+              list = null;
+            }
+          }
+          function flush() {
+            flushPara();
+            flushList();
+          }
+
+          for (var i = 0; i < lines.length; i++) {
+            var line = lines[i];
+            var trimmed = line.trim();
+
+            if (trimmed.slice(0, 3) === "```") {
+              flush();
+              var code = [];
+              i++;
+              while (i < lines.length && lines[i].trim().slice(0, 3) !== "```") {
+                code.push(lines[i]);
+                i++;
+              }
+              out.push("<pre><code>" + esc(code.join("\n")) + "</code></pre>");
+              continue;
+            }
+
+            if (trimmed === "") {
+              flush();
+              continue;
+            }
+
+            var heading = /^(#{1,6})\s+(.*)$/.exec(trimmed);
+            if (heading) {
+              flush();
+              var level = Math.min(heading[1].length + 2, 6);
+              out.push(
+                "<h" +
+                  level +
+                  ">" +
+                  inline(heading[2], prefix) +
+                  "</h" +
+                  level +
+                  ">",
+              );
+              continue;
+            }
+
+            if (trimmed.charAt(0) === "|" && trimmed.slice(-1) === "|") {
+              flush();
+              var head = cells(trimmed);
+              var rows = [];
+              i++;
+              if (i < lines.length && /^\s*\|[\s:|-]+\|\s*$/.test(lines[i])) i++;
+              while (
+                i < lines.length &&
+                lines[i].trim().charAt(0) === "|" &&
+                lines[i].trim().slice(-1) === "|"
+              ) {
+                rows.push(cells(lines[i].trim()));
+                i++;
+              }
+              i--;
+              var html = "<table><thead><tr>";
+              head.forEach(function (c) {
+                html += "<th>" + inline(c, prefix) + "</th>";
+              });
+              html += "</tr></thead><tbody>";
+              rows.forEach(function (r) {
+                html += "<tr>";
+                r.forEach(function (c) {
+                  html += "<td>" + inline(c, prefix) + "</td>";
+                });
+                html += "</tr>";
+              });
+              out.push(html + "</tbody></table>");
+              continue;
+            }
+
+            if (trimmed.charAt(0) === ">") {
+              flushPara();
+              flushList();
+              var quote = [];
+              while (i < lines.length && lines[i].trim().charAt(0) === ">") {
+                quote.push(lines[i].trim().slice(1).trim());
+                i++;
+              }
+              i--;
+              out.push(
+                "<blockquote>" +
+                  inline(quote.join(" "), prefix) +
+                  "</blockquote>",
+              );
+              continue;
+            }
+
+            var bullet = /^[-*]\s+(.*)$/.exec(trimmed);
+            var numbered = /^\d+[.)]\s+(.*)$/.exec(trimmed);
+            if (bullet || numbered) {
+              flushPara();
+              var want = bullet ? "ul" : "ol";
+              if (list !== want) {
+                flushList();
+                out.push("<" + want + ">");
+                list = want;
+              }
+              out.push(
+                "<li>" +
+                  inline((bullet || numbered)[1], prefix) +
+                  "</li>",
+              );
+              continue;
+            }
+
+            flushList();
+
+            // mantra keeps every line of the requirement but drops the blank
+            // lines between paragraphs, so the breaks are recovered from the
+            // source's hard wrap: a line ended a paragraph if it closed a
+            // sentence and the next line's first word would still have fitted
+            // on it. Both conditions are needed — the sources also break lines
+            // semantically, mid-sentence, and width alone then over-splits.
+            if (para.length) {
+              var previous = para[para.length - 1];
+              var word = trimmed.split(/\s/)[0];
+              if (
+                ENDS_SENTENCE.test(previous) &&
+                previous.length + 1 + word.length <= WRAP
+              ) {
+                flushPara();
+              }
+            }
+            para.push(trimmed);
+          }
+
+          flush();
+          return out.join("\n");
+        }
+
+        document.querySelectorAll("[data-md]").forEach(function (el) {
+          var text = el.textContent;
+          if (!text || !text.trim()) return;
+          el.innerHTML = render(text, el.dataset.reqBase || "");
+        });
+
+        /* ---- interactive tables --------------------------------------- */
+
+        function textOf(row, index) {
+          var cell = row.cells[index];
+          return cell ? cell.textContent.trim() : "";
+        }
+
+        // Column sorting, for every table in the report.
+        document.querySelectorAll("table").forEach(function (table) {
+          if (!table.tBodies.length) return;
+
+          var body = table.tBodies[0];
+          var headers = Array.prototype.slice.call(
+            table.querySelectorAll("th[data-sort]"),
+          );
+          if (!headers.length) return;
+
+          function sortBy(th) {
+            var index = Array.prototype.indexOf.call(th.parentNode.cells, th);
+            var descending = th.getAttribute("aria-sort") === "ascending";
+            var numeric = th.dataset.sort === "number";
+            var rows = Array.prototype.slice.call(body.rows);
+
+            headers.forEach(function (other) {
+              other.removeAttribute("aria-sort");
+            });
+            th.setAttribute("aria-sort", descending ? "descending" : "ascending");
+
+            rows.sort(function (a, b) {
+              var x = textOf(a, index);
+              var y = textOf(b, index);
+              var result = numeric
+                ? (parseFloat(x) || 0) - (parseFloat(y) || 0)
+                : x.localeCompare(y, undefined, { numeric: true });
+              return descending ? -result : result;
+            });
+            rows.forEach(function (row) {
+              body.appendChild(row);
+            });
+          }
+
+          headers.forEach(function (th) {
+            th.addEventListener("click", function () {
+              sortBy(th);
+            });
+          });
+
+          // Requirements are listed state by state; sorting on load restores
+          // the identifier order an auditor reads them in.
+          var panel = table.closest("[data-table]");
+          var initial = panel ? panel.dataset.sortDefault : undefined;
+          if (initial !== undefined && headers[parseInt(initial, 10)]) {
+            sortBy(headers[parseInt(initial, 10)]);
+          }
+        });
+
+        // Search and facet filtering, for tables wrapped in a filter panel.
+        document.querySelectorAll("[data-table]").forEach(function (panel) {
+          var table = panel.querySelector("table");
+          if (!table || !table.tBodies.length) return;
+
+          var body = table.tBodies[0];
+          var rows = Array.prototype.slice.call(body.rows);
+          var search = panel.querySelector("[data-role=search]");
+          var chips = Array.prototype.slice.call(
+            panel.querySelectorAll(".chip[data-facet]"),
+          );
+          var counter = panel.querySelector("[data-role=count]");
+          var empty = panel.querySelector(".table-empty");
+          var noun = panel.dataset.noun || "rows";
+
+          rows.forEach(function (row) {
+            row.dataset.haystack = row.textContent.toLowerCase();
+          });
+
+          function activeFacets() {
+            var active = {};
+            chips.forEach(function (chip) {
+              if (chip.getAttribute("aria-pressed") === "true") {
+                var facet = chip.dataset.facet;
+                (active[facet] = active[facet] || []).push(chip.dataset.value);
+              }
+            });
+            return active;
+          }
+
+          function apply() {
+            var needle = search ? search.value.trim().toLowerCase() : "";
+            var facets = activeFacets();
+            var keys = Object.keys(facets);
+            var shown = 0;
+
+            rows.forEach(function (row) {
+              var visible = !needle || row.dataset.haystack.indexOf(needle) >= 0;
+              for (var k = 0; visible && k < keys.length; k++) {
+                var wanted = facets[keys[k]];
+                var have = (row.dataset[keys[k]] || "").split(" ");
+                visible = wanted.some(function (value) {
+                  return have.indexOf(value) >= 0;
+                });
+              }
+              row.hidden = !visible;
+              if (visible) shown++;
+            });
+
+            if (counter) counter.textContent = shown + " of " + rows.length + " " + noun;
+            if (empty) empty.style.display = shown ? "none" : "block";
+          }
+
+
+          chips.forEach(function (chip) {
+            var facet = chip.dataset.facet;
+            var value = chip.dataset.value;
+            var total = rows.filter(function (row) {
+              return (row.dataset[facet] || "").split(" ").indexOf(value) >= 0;
+            }).length;
+            var count = chip.querySelector(".chip__count");
+            if (count) count.textContent = total;
+
+            chip.addEventListener("click", function () {
+              var on = chip.getAttribute("aria-pressed") === "true";
+              chip.setAttribute("aria-pressed", on ? "false" : "true");
+              apply();
+            });
+          });
+
+          if (search) {
+            search.addEventListener("input", apply);
+            search.addEventListener("keydown", function (event) {
+              if (event.key === "Escape") {
+                search.value = "";
+                apply();
+              }
+            });
+          }
+
+          var reset = panel.querySelector("[data-role=reset]");
+          if (reset) {
+            reset.addEventListener("click", function () {
+              if (search) search.value = "";
+              chips.forEach(function (chip) {
+                chip.setAttribute("aria-pressed", "false");
+              });
+              apply();
+            });
+          }
+
+          apply();
+        });
+
+        /* ---- keyboard ------------------------------------------------- */
+
+        document.addEventListener("keydown", function (event) {
+          if (event.key !== "/" || event.metaKey || event.ctrlKey) return;
+          var tag = (document.activeElement || {}).tagName;
+          if (tag === "INPUT" || tag === "TEXTAREA") return;
+          var search = document.querySelector("[data-role=search]");
+          if (search) {
+            event.preventDefault();
+            search.focus();
+            search.select();
+          }
+        });
+      })();
+    </script>
+  </body>
+</html>
