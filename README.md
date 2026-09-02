@@ -1,10 +1,11 @@
-# safety-critical-workshop
+# Safety-Critical Rust Development with Ferrocene
 
-This repository contains the accompanying demo for the "Safety-Critical Rust Development with Ferrocene" workshop.
+This repository contains the accompanying demo for the [Safety-Critical Rust Development with Ferrocene](https://oxidizeconf.com/sessions/safety_critical_rust_development_with_ferrocene) workshop.
 
 ## Prerequisites
 
 **The following tools must be installed:**
+
 - Install [criticalup](https://criticalup.ferrocene.dev/install.html)
 - Docker installed and usable (see OS specific instructions below)
 - **Optional:** Rust toolchain via [rustup](https://rust-lang.org/tools/install/).  
@@ -98,6 +99,7 @@ This will run all unit tests and collect code coverage data.
 For manual and system testing, two NRF 52840 DK devices must be connected to your host machine.
 
 Related Datasheets from Nordic:
+
 - [nRF52840 DK Hardware](https://docs.nordicsemi.com/r/bundle/ug_nrf52840_dk/page/ug/dk/intro.html)
 - [nRF52840 Product Specification](https://docs.nordicsemi.com/r/bundle/ps_nrf52840/page/keyfeatures_html5.html)
 
@@ -105,7 +107,7 @@ The main device is referred to as **RAD** and is the one the main `rad` applicat
 For testing purpose, the second device referred to as **SIM** is used to simulate the environment the application is being used in.
 
 The two boards are connected through pins `P1.02` to `P1.08` with `P1.02` to `P1.04` being **RAD** outputs and **SIM** inputs.
-Mapping is done in a way that makes it easy to use two 4-pin male-to-male cables as shown in the [HW-Setup.pdf](HW-Setup.pdf) schematic. 
+Mapping is done in a way that makes it easy to use two 4-pin male-to-male cables as shown in the [HW-Setup.pdf](HW-Setup.pdf) schematic.
 
 **Note:** Not all 8 pins are used, but using two 4-pin cables makes connecting the two boards easier.
 
@@ -114,6 +116,7 @@ Mapping is done in a way that makes it easy to use two 4-pin male-to-male cables
 The following lists show how the I/O pins, LEDs and buttons of the two boards are connected.
 
 **RAD:**
+
 - Outputs
   - p1.01: Radiation Control
     - Low: Start Radiation
@@ -144,6 +147,7 @@ The following lists show how the I/O pins, LEDs and buttons of the two boards ar
   - 4: Radiation Relay (ON = Active)
 
 **SIM:**
+
 - Outputs
   - p1.01: Start-Stop Switch
     - Low: Start
@@ -201,6 +205,7 @@ The output ID per probe is: `<vendor ID>:<probe ID>:<serial number>`
 
 Since vendor and probe ID should be the same for all DK devices,
 only the serial numbers for the **RAD** and **SIM** devives must be replaced in:
+
 - `rad/.cargo/config.toml` using the number of the **RAD**
 - `sim/.cargo/config.toml` using the number of the **SIM**
 - `system-tests/src/lib.rs` changing the two constants at the top
