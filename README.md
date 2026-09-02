@@ -53,8 +53,6 @@ For convenience, the Dockerfile in this repository provides the needed `qemu-arm
 **To build the image locally, run:**
 
 ```sh
-docker buildx create --name multiarch-builder --use
-docker buildx inspect --bootstrap
 docker buildx build --load -t ubuntu-qemu-arm .
 ```
 
