@@ -252,7 +252,7 @@ impl Rad {
 
         // we entered operation mode => control radiation
         if !(self.stop_triggered || self.invariant_violated) {
-            //mantra_macros::impl_req!("rad.sw.limit-radiation" => {
+            mantra_macros::impl_req!("rad.sw.limit-radiation" => {
             if !self.intensity_limit_reached
                 && self
                     .rad_start_time
@@ -283,7 +283,7 @@ impl Rad {
             if !self.intensity_limit_reached && !hal.radiation_active() {
                 hal.start_radiation();
             }
-            //});
+            });
         }
 
         self.prev_mode = Some(RadMode::Operation);

@@ -12,14 +12,14 @@
                     path: "docs/requirements/base",
                     source: "markup",
                 },
-                // {
-                //     path: "docs/requirements/phase_one",
-                //     source: "markup",
-                // },
-                // {
-                //     path: "docs/requirements/phase_two",
-                //     source: "markup",
-                // }
+                {
+                    path: "docs/requirements/phase_one",
+                    source: "markup",
+                },
+                {
+                    path: "docs/requirements/phase_two",
+                    source: "markup",
+                }
             ],
             annotations: [
                 {
@@ -54,11 +54,11 @@
                     source: "schema",
                     pattern: "*.json5"
                 },
-                // {
-                //     path: "docs/reviews/phase_one",
-                //     source: "schema",
-                //     pattern: "*.json5"
-                // }
+                {
+                    path: "docs/reviews/phase_one",
+                    source: "schema",
+                    pattern: "*.json5"
+                }
             ]
         }
     ]
