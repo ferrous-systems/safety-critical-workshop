@@ -7,7 +7,7 @@ Identifying potential risks and specifying related risk control measures is comm
 
 ## `risk.wrong-usage`: Wrong usage
 
-If the *RAD* is wrongfully configured or used outside an safe operation environment,
+If the *RAD* is wrongfully configured or used outside a safe operation environment,
 serious injury and even death is possible.
 
 To prevent this, the *RAD* must be designed and built to prevent wrongful usage that could injure someone.
